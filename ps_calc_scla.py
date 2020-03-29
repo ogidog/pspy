@@ -101,7 +101,7 @@ def ps_calc_scla(use_small_baselines, coest_mean_vel):
     if scla_deramp == 'y':
         print('\n   deramping ifgs...\n')
 
-        [ph_all, ph_ramp] = ps_deramp(ps, uw['ph_uw']);
+        [ph_all, ph_ramp] = ps_deramp(ps, uw['ph_uw'], 1);
         uw.ph_uw = uw.ph_uw - ph_ramp;
 
         # ph_ramp=zeros(ps.n_ps,n_ifg,'single');

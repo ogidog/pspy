@@ -1,9 +1,10 @@
 import os
-from scipy.io import loadmat
 import numpy as np
+import ggf
+from scipy.io import loadmat
 
 
-def ps_deramp(ps, ph_all, degree=1):
+def ps_deramp(ps, ph_all, degree):
     print('     Deramping computed on the fly. \n')
 
     if os.path.exists('deramp_degree.mat') == 2:
@@ -32,3 +33,18 @@ def ps_deramp(ps, ph_all, degree=1):
         # z = ax^3 + by^3 + cx^2y + dy^2x + ex^2 + by^2 + cxy + d
         # A = double([(ps.xy(:,2:3)/1000).^3  (ps.xy(:,2)./1000).^2.*ps.xy(:,3)/1000 (ps.xy(:,3)./1000).^2.*ps.xy(:,2)/1000 (ps.xy(:,2:3)/1000).^2 ps.xy(:,2)/1000.*ps.xy(:,3)/1000 ones([ps.n_ps 1])]);
         print('**** z = ax^3 + by^3 + cx^2y + dy^2x + ex^2 + fy^2 + gxy + h \n')
+
+    ph_ramp = np.empty((len(ph_all), len(ph_all[0]),))
+    ph_ramp[:] = np.nan
+
+    # TODO: may be an error
+    for k in range(0, ps['n_ifg'][0][0]):
+        ix = np.isnan(ph_all[:, k]);
+        if ps['n_ps'][0][0] - np.sum(ix) > 5:
+            coeff = ggf.matlab_funcs.lscov(A[~ix, :], ph_all[~ix, k])
+            ph_ramp[:, k] = A.dot(coeff)
+            ph_all[:, k] = ph_all[:, k] - ph_ramp[:, k]
+        else:
+            print(['Ifg ' + str(k) + ' is not deramped \n'])
+
+    return [ph_all, ph_ramp]
