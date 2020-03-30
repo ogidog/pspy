@@ -3,6 +3,7 @@ import numpy as np
 from inspect import signature
 from scipy.io import loadmat
 from ps_deramp import ps_deramp
+from getparm import get_parm_value as getparm
 
 
 def ps_calc_scla(use_small_baselines, coest_mean_vel):
@@ -17,8 +18,8 @@ def ps_calc_scla(use_small_baselines, coest_mean_vel):
         coest_mean_vel = 0;
 
     # TODO: Implement getparm() function
-    small_baseline_flag = 'n'  # getparm('small_baseline_flag', 1);
-    drop_ifg_index = []  # getparm('drop_ifg_index', 1);
+    small_baseline_flag = getparm('small_baseline_flag')[0]
+    drop_ifg_index = getparm('drop_ifg_index')
     scla_method = 'L2'  # getparm('scla_method', 1);
     scla_deramp = 'y'  # getparm('scla_deramp', 1);
     subtr_tropo = 'n'  # getparm('subtr_tropo', 1);
@@ -89,31 +90,46 @@ def ps_calc_scla(use_small_baselines, coest_mean_vel):
     # if exist(apsname,'file')~=2
     # the tca file does not exist. See in case this is SM if it needs
     # to be inverted
-    # if strcmpi(apsname,['./tca',num2str(psver)])
-    # if strcmpi(getparm('small_baseline_flag'),'y')
-    # sb_invert_aps(tropo_method)
-    # end
-    # aps = load(apsname);
-    # [aps_corr,fig_name_tca,tropo_method] = ps_plot_tca(aps,tropo_method);
-    # uw.ph_uw=uw.ph_uw-aps_corr;
+    #    if strcmpi(apsname,['./tca',num2str(psver)])
+    #        if strcmpi(getparm('small_baseline_flag'),'y')
+    #           sb_invert_aps(tropo_method)
+    #        end
+    #     end
+    #    aps = load(apsname);
+    #    [aps_corr,fig_name_tca,tropo_method] = ps_plot_tca(aps,tropo_method);
+    #    uw.ph_uw=uw.ph_uw-aps_corr;
     # end
 
     if scla_deramp == 'y':
         print('\n   deramping ifgs...\n')
 
-        [ph_all, ph_ramp] = ps_deramp(ps, uw['ph_uw'], 1)
+        [ph_all, ph_ramp] = ps_deramp(ps.copy(), uw['ph_uw'].copy(), 1)
         uw['ph_uw'] = np.subtract(uw['ph_uw'], ph_ramp)
 
         # ph_ramp=zeros(ps.n_ps,n_ifg,'single');
         # G=double([ones(ps.n_ps,1),ps.xy(:,2),ps.xy(:,3)]);
         # for i=1:length(unwrap_ifg_index)
-        # d=uw.ph_uw(:,unwrap_ifg_index(i));
-        # m=G\double(d(:));
-        # ph_this_ramp=G*m;
-        # uw.ph_uw(:,unwrap_ifg_index(i))=uw.ph_uw(:,unwrap_ifg_index(i))-ph_this_ramp; % subtract ramp
-        # ph_ramp(:,unwrap_ifg_index(i))=ph_this_ramp;
+        #   d=uw.ph_uw(:,unwrap_ifg_index(i));
+        #   m=G\double(d(:));
+        #   ph_this_ramp=G*m;
+        #   uw.ph_uw(:,unwrap_ifg_index(i))=uw.ph_uw(:,unwrap_ifg_index(i))-ph_this_ramp; % subtract ramp
+        #   ph_ramp(:,unwrap_ifg_index(i))=ph_this_ramp;
         # end
+
     else:
         ph_ramp = []
+
+    unwrap_ifg_index = np.setdiff1d(unwrap_ifg_index, scla_drop_index);
+
+    # Check with Andy:
+    # 1) should this not be placed before the ramp computation.
+    # 2) if this is spatial fitlering in time - not compatible with TRAIN
+    # if exist([apsname_old,'.mat'],'file')
+    # if strcmpi(subtr_tropo,'y')
+    # fprintf(['You are removing atmosphere twice. Do not do this, either do:\n use ' apsname_old ' with subtr_tropo=''n''\n remove ' apsname_old ' use subtr_tropo=''y''\n'])
+    # end
+    # aps=load(apsname_old);
+    # uw.ph_uw=uw.ph_uw-aps.ph_aps_slave;
+    # end
 
     sys.exit()
