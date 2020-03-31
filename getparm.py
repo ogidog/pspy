@@ -42,17 +42,32 @@ def print_parm(parms, key):
         print(key + ': {}'.format(parms_value_format(value)))
 
 
-def get_parm_value(key):
-    ps_parms_default
-    parms = load_parms_file()
+def get_parm_value(parmname):
 
-    return parms[key]
+    ps_parms_default
+    parms, localparms = load_parms_file()
+    parmnames = list(filter(lambda fkey: '__' not in fkey, list(parms.keys())))
+
+    parmnum = [i for i in range(len(parmnames)) if parmname in parmnames[i]]
+    if len(parmnum) > 1:
+        print('Parameter {}  is not unique'.format(parmname))
+    else:
+        if len(parmnum) == 0:
+            parmname = []
+            value = []
+        else:
+            if parmname in localparms.keys():
+                value = localparms[parmname]
+            else:
+                value = parms[parmname]
+
+    return value, parmname
 
 
 def load_parms_file():
     parms = {}
     parmfile = 'parms.mat'
-    # localparmfile='localparms';
+    localparmfile = 'localparms.mat';
 
     if os.path.exists('./parms.mat'):
         parms = loadmat(parmfile);
@@ -64,13 +79,12 @@ def load_parms_file():
         else:
             print('parms.mat not found')
 
-    # if exist('localparms.mat','file')
-    #    localparms=load(localparmfile);
-    # else
-    #     localparms=struct('Created',date);
-    # end
+    if os.path.exists('localparms.mat'):
+        localparms = loadmat(localparmfile);
+    else:
+        localparms = {'Created': datetime.today().strftime('%Y-%m-%d')}
 
-    return parms
+    return parms, localparms
 
 
 def main(args):
@@ -78,11 +92,10 @@ def main(args):
 
     args = args[1:]
 
-    # if nargin<2
-    #    printflag=0;
-    # end
+    if len(args) < 2:
+        printflag = 0
 
-    parms = load_parms_file()
+    parms, localparms = load_parms_file()
 
     if len(args) < 1:
         print_params(parms)

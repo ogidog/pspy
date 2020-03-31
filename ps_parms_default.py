@@ -23,7 +23,8 @@ def ps_parms_default():
     num_fields = len(parmfields_before);
 
     if 'max_topo_err' not in parmfields_before:
-        parms['max_topo_err']=20
+        parms['max_topo_err'] = 20
 
+    # TODO: save
 
     sys.exit(0)

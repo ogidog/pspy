@@ -3,6 +3,7 @@ import numpy as np
 from inspect import signature
 from scipy.io import loadmat
 from ps_deramp import ps_deramp
+from ps_setref import ps_setref
 from getparm import get_parm_value as getparm
 
 
@@ -11,19 +12,19 @@ def ps_calc_scla(use_small_baselines, coest_mean_vel):
     print('Estimating spatially-correlated look angle error...')
 
     sig = signature(ps_calc_scla)
-    params = sig.parameters
-    if len(params) < 1:
+    args = sig.parameters
+    if len(args) < 1:
         use_small_baselines = 0;
-    if len(params) < 2:
+    if len(args) < 2:
         coest_mean_vel = 0;
 
     # TODO: Implement getparm() function
-    small_baseline_flag = getparm('small_baseline_flag')[0]
-    drop_ifg_index = getparm('drop_ifg_index')
-    scla_method = 'L2'  # getparm('scla_method', 1);
-    scla_deramp = 'y'  # getparm('scla_deramp', 1);
-    subtr_tropo = 'n'  # getparm('subtr_tropo', 1);
-    tropo_method = 'a_l'  # getparm('tropo_method', 1);
+    small_baseline_flag = getparm('small_baseline_flag')[0][0]
+    drop_ifg_index = getparm('drop_ifg_index')[0]
+    scla_method = getparm('scla_method')[0][0]
+    scla_deramp = getparm('scla_deramp')[0][0]
+    subtr_tropo = getparm('subtr_tropo')[0][0]
+    tropo_method = getparm('tropo_method')[0][0]
 
     if use_small_baselines != 0:
         if small_baseline_flag != 'y':
@@ -99,6 +100,7 @@ def ps_calc_scla(use_small_baselines, coest_mean_vel):
     #    [aps_corr,fig_name_tca,tropo_method] = ps_plot_tca(aps,tropo_method);
     #    uw.ph_uw=uw.ph_uw-aps_corr;
     # end
+    # end
 
     if scla_deramp == 'y':
         print('\n   deramping ifgs...\n')
@@ -125,11 +127,13 @@ def ps_calc_scla(use_small_baselines, coest_mean_vel):
     # 1) should this not be placed before the ramp computation.
     # 2) if this is spatial fitlering in time - not compatible with TRAIN
     # if exist([apsname_old,'.mat'],'file')
-    # if strcmpi(subtr_tropo,'y')
-    # fprintf(['You are removing atmosphere twice. Do not do this, either do:\n use ' apsname_old ' with subtr_tropo=''n''\n remove ' apsname_old ' use subtr_tropo=''y''\n'])
+    #   if strcmpi(subtr_tropo,'y')
+    #       fprintf(['You are removing atmosphere twice. Do not do this, either do:\n use ' apsname_old ' with subtr_tropo=''n''\n remove ' apsname_old ' use subtr_tropo=''y''\n'])
+    #   end
+    #   aps=load(apsname_old);
+    #   uw.ph_uw=uw.ph_uw-aps.ph_aps_slave;
     # end
-    # aps=load(apsname_old);
-    # uw.ph_uw=uw.ph_uw-aps.ph_aps_slave;
-    # end
+
+    ref_ps = ps_setref();
 
     sys.exit()
