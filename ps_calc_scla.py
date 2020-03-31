@@ -82,25 +82,24 @@ def ps_calc_scla(use_small_baselines, coest_mean_vel):
         unwrap_ifg_index = np.setdiff1d(np.arange(0, ps['n_ifg'][0][0]), drop_ifg_index)
         n_ifg = ps['n_ifg'][0][0]
 
-    # TODO: subtr_tropo
-    # if strcmpi(subtr_tropo,'y')
-    # Remove the tropo correction - TRAIN support
-    # recompute the APS inversion on the fly as user migth have dropped
-    # SB ifgs before and needs new update of the SM APS too.
+    if subtr_tropo == 'y':
+        print("You set the param subtr_tropo={}, but not supported yet.".format(getparm('subtr_tropo')[0][0]))
+        # Remove the tropo correction - TRAIN support
+        # recompute the APS inversion on the fly as user migth have dropped
+        # SB ifgs before and needs new update of the SM APS too.
 
-    # if exist(apsname,'file')~=2
-    # the tca file does not exist. See in case this is SM if it needs
-    # to be inverted
-    #    if strcmpi(apsname,['./tca',num2str(psver)])
-    #        if strcmpi(getparm('small_baseline_flag'),'y')
-    #           sb_invert_aps(tropo_method)
-    #        end
-    #     end
-    #    aps = load(apsname);
-    #    [aps_corr,fig_name_tca,tropo_method] = ps_plot_tca(aps,tropo_method);
-    #    uw.ph_uw=uw.ph_uw-aps_corr;
-    # end
-    # end
+        # if exist(apsname,'file')~=2
+        # the tca file does not exist. See in case this is SM if it needs
+        # to be inverted
+        #    if strcmpi(apsname,['./tca',num2str(psver)])
+        #        if strcmpi(getparm('small_baseline_flag'),'y')
+        #           sb_invert_aps(tropo_method)
+        #        end
+        #     end
+        #    aps = load(apsname);
+        #    [aps_corr,fig_name_tca,tropo_method] = ps_plot_tca(aps,tropo_method);
+        #    uw.ph_uw=uw.ph_uw-aps_corr;
+        # end
 
     if scla_deramp == 'y':
         print('\n   deramping ifgs...\n')

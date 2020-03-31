@@ -24,15 +24,18 @@ def ps_deramp(ps, ph_all, degree):
     if degree == 1.5:
         # z = ax + by+ cxy + d
         # A = double([ps.xy(:,2:3)/1000 ps.xy(:,2)/1000.*ps.xy(:,3)/1000 ones([ps.n_ps 1])]);
-        print('**** z = ax + by+ cxy + d\n')
+        # print('**** z = ax + by+ cxy + d\n')
+        print('Degrees other then 1 not supported yet.')
     if degree == 2:
         # z = ax^2 + by^2 + cxy + d
         # A = double([(ps.xy(:,2:3)/1000).^2 ps.xy(:,2)/1000.*ps.xy(:,3)/1000 ones([ps.n_ps 1])]);
-        print('**** z = ax^2 + by^2 + cxy + d \n')
+        # print('**** z = ax^2 + by^2 + cxy + d \n')
+        print('Degrees other then 1 not supported yet.')
     if degree == 3:
         # z = ax^3 + by^3 + cx^2y + dy^2x + ex^2 + by^2 + cxy + d
         # A = double([(ps.xy(:,2:3)/1000).^3  (ps.xy(:,2)./1000).^2.*ps.xy(:,3)/1000 (ps.xy(:,3)./1000).^2.*ps.xy(:,2)/1000 (ps.xy(:,2:3)/1000).^2 ps.xy(:,2)/1000.*ps.xy(:,3)/1000 ones([ps.n_ps 1])]);
-        print('**** z = ax^3 + by^3 + cx^2y + dy^2x + ex^2 + fy^2 + gxy + h \n')
+        # print('**** z = ax^3 + by^3 + cx^2y + dy^2x + ex^2 + fy^2 + gxy + h \n')
+        print('Degrees other then 1 not supported yet.')
 
     ph_ramp = np.empty((len(ph_all), len(ph_all[0]),))
     ph_ramp[:] = np.nan
