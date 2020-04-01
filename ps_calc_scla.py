@@ -1,10 +1,13 @@
-import sys, os
-import numpy as np
+import os
+import sys
 from inspect import signature
+
+import numpy as np
 from scipy.io import loadmat
+
+from getparm import get_parm_value as getparm
 from ps_deramp import ps_deramp
 from ps_setref import ps_setref
-from getparm import get_parm_value as getparm
 
 
 def ps_calc_scla(use_small_baselines, coest_mean_vel):
@@ -120,7 +123,7 @@ def ps_calc_scla(use_small_baselines, coest_mean_vel):
     else:
         ph_ramp = []
 
-    unwrap_ifg_index = np.setdiff1d(unwrap_ifg_index, scla_drop_index);
+    unwrap_ifg_index = np.setdiff1d(unwrap_ifg_index, scla_drop_index)
 
     # Check with Andy:
     # 1) should this not be placed before the ramp computation.
@@ -133,6 +136,31 @@ def ps_calc_scla(use_small_baselines, coest_mean_vel):
     #   uw.ph_uw=uw.ph_uw-aps.ph_aps_slave;
     # end
 
-    ref_ps = ps_setref();
+    ref_ps = ps_setref()
+    uw['ph_uw'] = np.subtract(uw['ph_uw'], np.tile(np.nanmean(uw['ph_uw'][ref_ps, :], 0), (ps['n_ps'][0][0], 1)))
+
+    if use_small_baselines == 0:
+        if small_baseline_flag == 'y':
+            print("You set the param small_baseline_flag={}, but not supported yet.".format(
+                getparm('small_baseline_flag')[0][0]))
+            # bperp_mat=zeros(ps.n_ps,ps.n_image,'single');
+            # G=zeros(ps.n_ifg,ps.n_image);
+            # for i=1:ps.n_ifg
+            #    G(i,ps.ifgday_ix(i,1))=-1;
+            #    G(i,ps.ifgday_ix(i,2))=1;
+            # end
+            # if isfield(uw,'unwrap_ifg_index_sm')
+            #    unwrap_ifg_index=setdiff(uw.unwrap_ifg_index_sm,scla_drop_index);
+            # end
+            # unwrap_ifg_index=setdiff(unwrap_ifg_index,ps.master_ix);
+
+            # G=G(:,unwrap_ifg_index);
+            # bperp_some=[G\double(bp.bperp_mat')]';
+            # bperp_mat(:,unwrap_ifg_index)=bperp_some;
+            # clear bperp_some
+        else:
+            bperp_mat=[bp['bperp_mat'][:,1:ps['master_ix'][0][0]-1],zeros(ps.n_ps,1,'single'),bp.bperp_mat(:,ps.master_ix:end)];
+
+        print()
 
     sys.exit()
