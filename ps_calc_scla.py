@@ -192,6 +192,32 @@ def ps_calc_scla(use_small_baselines, coest_mean_vel):
                 date.fromordinal(ps['day'][unwrap_ifg_index[i + 1]][0] - 366),
                 day[i][0], np.round(bprint[i])))
 
-    K_ps_uw = np.zeros(ps['n_ps'][0][0], 1);
+    K_ps_uw = np.zeros((ps['n_ps'][0][0], 1))
 
-    sys.exit()
+    if coest_mean_vel == 0 or len(unwrap_ifg_index) < 4:
+        G = np.insert(np.ones((len(ph[0]), 1)), 1, np.mean(bperp, 0), axis=1)
+    else:
+        G = np.append(np.insert(np.ones((len(ph[0]), 1)), 1, np.mean(bperp, 0), axis=1), day, axis=1)
+
+    ifg_vcm = np.eye(ps['n_ifg'][0][0]);
+
+    if small_baseline_flag == 'y':
+        print("You set the param small_baseline_flag={}, but not supported yet.".format(
+            getparm('small_baseline_flag')[0][0]))
+        # if use_small_baselines==0
+        #    phuwres=load(phuwsbresname,'sm_cov');
+        #    if isfield(phuwres,'sm_cov')
+        #        ifg_vcm=phuwres.sm_cov;
+        #    end
+        # else
+        #    phuwres=load(phuwsbresname,'sb_cov');
+        #    if isfield(phuwres,'sb_cov')
+        #        ifg_vcm=phuwres.sb_cov;
+        #    end
+    else:
+        if os.path.exists(ifgstdname + '.mat'):
+            ifgstd = loadmat(ifgstdname + '.mat');
+            ifg_vcm = np.diag(np.power(ifgstd['ifg_std'] * np.pi / 180, 2).T[0])
+            ifgstd.clear()
+
+    print()
