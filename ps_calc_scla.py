@@ -159,7 +159,12 @@ def ps_calc_scla(use_small_baselines, coest_mean_vel):
             # bperp_mat(:,unwrap_ifg_index)=bperp_some;
             # clear bperp_some
         else:
-            bperp_mat=[bp['bperp_mat'][:,1:ps['master_ix'][0][0]-1],zeros(ps.n_ps,1,'single'),bp.bperp_mat(:,ps.master_ix:end)];
+            bperp_mat = np.append(
+                np.append(bp['bperp_mat'][:, 0:ps['master_ix'][0][0] - 1], np.zeros((ps['n_ps'][0][0], 1)), 1),
+                bp['bperp_mat'][:, ps['master_ix'][0][0] - 1:], 1)
+
+        day = np.diff((ps['day'][unwrap_ifg_index]), axis=0)
+        ph = np.diff(uw['ph_uw'][:, unwrap_ifg_index], 1)
 
         print()
 
