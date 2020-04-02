@@ -237,6 +237,9 @@ def ps_calc_scla(use_small_baselines, coest_mean_vel):
         sys.exit(0)
         # ifg_vcm_use=ifg_vcm(unwrap_ifg_index,unwrap_ifg_index);
 
-    m = (((np.linalg.inv((G.T.dot(np.linalg.inv(ifg_vcm_use)).dot(G)))).dot(G.T)).dot(np.linalg.inv(ifg_vcm_use))).dot(ph.T) #  # x = inv(A'*inv(V)*A)*A'*inv(V)*B L2-norm
+    # solving x = inv(A'*inv(V)*A)*A'*inv(V)*B, L2-norm
+    m = (((np.linalg.inv((G.T.dot(np.linalg.inv(ifg_vcm_use)).dot(G)))).dot(G.T)).dot(np.linalg.inv(ifg_vcm_use))).dot(
+        ph.T)
+    K_ps_uw = (np.array(m[1, :])[np.newaxis]).T
 
     print()
