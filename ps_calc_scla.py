@@ -1,5 +1,5 @@
-import os
-import sys
+import os, sys
+from datetime import date
 from inspect import signature
 
 import numpy as np
@@ -78,9 +78,10 @@ def ps_calc_scla(use_small_baselines, coest_mean_vel):
     uw = loadmat(phuwname);
 
     if small_baseline_flag == 'y' and use_small_baselines == 0:
-        # TODO: if SBaS processing
-        unwrap_ifg_index = np.arange(0, ps['n_image'][0][0])
-        n_ifg = ps['n_image'][0][0]
+        print("You set the param small_baseline_flag={}, but not supported yet.".format(
+            getparm('small_baseline_flag')[0][0]))
+        # unwrap_ifg_index = np.arange(0, ps['n_image'][0][0])
+        # n_ifg = ps['n_image'][0][0]
     else:
         unwrap_ifg_index = np.setdiff1d(np.arange(0, ps['n_ifg'][0][0]), drop_ifg_index)
         n_ifg = ps['n_ifg'][0][0]
@@ -165,7 +166,32 @@ def ps_calc_scla(use_small_baselines, coest_mean_vel):
 
         day = np.diff((ps['day'][unwrap_ifg_index]), axis=0)
         ph = np.diff(uw['ph_uw'][:, unwrap_ifg_index], 1)
+        bperp = np.diff(bperp_mat[:, unwrap_ifg_index], 1)
 
-        print()
+    else:
+        print("You set the param use_small_baselines={}, but not supported yet.".format(
+            getparm('use_small_baselines')[0][0]))
+
+        # bperp_mat=bp.bperp_mat;
+        # bperp=bperp_mat(:,unwrap_ifg_index);
+        # day=ps.ifgday(unwrap_ifg_index,2)-ps.ifgday(unwrap_ifg_index,1);
+        # ph=double(uw.ph_uw(:,unwrap_ifg_index));
+    bp.clear()
+
+    bprint = np.mean(bperp, 0)
+    print('PS_CALC_SCLA: {} ifgs used in estimation:'.format(len(ph[0])))
+
+    for i in range(len(ph[0])):
+        if use_small_baselines != 0:
+            print("You set the param use_small_baselines={}, but not supported yet.".format(
+                getparm('use_small_baselines')[0][0]))
+            # logit(sprintf('   %s to %s %5d days %5d m',datestr(ps.ifgday(unwrap_ifg_index(i),1)),datestr(ps.ifgday(unwrap_ifg_index(i),2)),day(i),round(bprint(i))))
+        else:
+            print('PS_CALC_SCLA:     {} to {} {} days {} m'.format(
+                date.fromordinal(ps['day'][unwrap_ifg_index[i]][0] - 366),
+                date.fromordinal(ps['day'][unwrap_ifg_index[i + 1]][0] - 366),
+                day[i][0], np.round(bprint[i])))
+
+    K_ps_uw = np.zeros(ps['n_ps'][0][0], 1);
 
     sys.exit()
