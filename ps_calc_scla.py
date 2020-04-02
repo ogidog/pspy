@@ -241,5 +241,7 @@ def ps_calc_scla(use_small_baselines, coest_mean_vel):
     m = (((np.linalg.inv((G.T.dot(np.linalg.inv(ifg_vcm_use)).dot(G)))).dot(G.T)).dot(np.linalg.inv(ifg_vcm_use))).dot(
         ph.T)
     K_ps_uw = (np.array(m[1, :])[np.newaxis]).T
+    if coest_mean_vel != 0:
+        v_ps_uw = (np.array(m[2, :])[np.newaxis]).T
 
     print()
