@@ -1,14 +1,20 @@
 import os, sys
-import ggf
 from datetime import date
 from inspect import signature
 
 import numpy as np
 from scipy.io import loadmat
+from scipy.optimize import fmin, minimize
 
 from getparm import get_parm_value as getparm
 from ps_deramp import ps_deramp
 from ps_setref import ps_setref
+
+
+def f(x, *args):
+    d = args[0]
+    G = args[1]
+    return sum(abs(np.array([d]).T - np.array([G.dot(x)]).T))
 
 
 def ps_calc_scla(use_small_baselines, coest_mean_vel):
@@ -243,5 +249,15 @@ def ps_calc_scla(use_small_baselines, coest_mean_vel):
     K_ps_uw = (np.array(m[1, :])[np.newaxis]).T
     if coest_mean_vel != 0:
         v_ps_uw = (np.array(m[2, :])[np.newaxis]).T
+
+    if scla_method == 'L1':
+        print('\n SCLA Method L1-norm')
+        for i in range(0, ps['n_ps'][0][0]):
+            d = ph[i, :]
+            m2 = m[:, i]
+            m2 = fmin(f, m2, args=(d, G), disp=False)
+            K_ps_uw[i] = m2[1]
+            if i % 10000 == 0:
+                print('{} of {} pixels processed'.format(i, ps['n_ps'][0][0]))
 
     print()
