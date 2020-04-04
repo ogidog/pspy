@@ -30,7 +30,7 @@ def ps_calc_scla(use_small_baselines, coest_mean_vel):
 
     # TODO: Implement getparm() function
     small_baseline_flag = getparm('small_baseline_flag')[0][0]
-    drop_ifg_index = getparm('drop_ifg_index')[0]
+    drop_ifg_index = getparm('drop_ifg_index')[0] # TODO: проверить, когда, например, drop_ifg_index=[0] индекс указан для нумерации индексов в python
     scla_method = getparm('scla_method')[0][0]
     scla_deramp = getparm('scla_deramp')[0][0]
     subtr_tropo = getparm('subtr_tropo')[0][0]
@@ -79,12 +79,7 @@ def ps_calc_scla(use_small_baselines, coest_mean_vel):
     if use_small_baselines == 0:
         os.system('rm -f ' + meanvname + '.mat')
 
-    # !!!!!!!!!!! ВАЖНО !!!!!!!!!!
     ps = loadmat(psname + '.mat')
-    # TODO: убрать когда будет сделаны предыдущие этапы.
-    # TODO: в matlab индексация идет с 1 и поэтому ps['master_ix'][0][0] = master_ix (например, 5), в python это должно быть master_ix-1 (например, 4)
-    ps['master_ix'][0][0] = ps['master_ix'][0][0] - 1
-    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     bp = {}
     if os.path.exists(bpname + '.mat'):
@@ -274,6 +269,9 @@ def ps_calc_scla(use_small_baselines, coest_mean_vel):
             print()
             # C_ps_uw=mean(uw.ph_uw(:,unwrap_ifg_index)-ph_scla(:,unwrap_ifg_index),2);
         else:
+            # !!!!!!!!!!! ВАЖНО !!!!!!!!!!
+            # TODO: В matlab индексация идет с 1 и поэтому ps['master_ix'][0][0] = master_ix (например, 5), в python это должно быть master_ix-1 (например, 4)
+            # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
             # np.ones(len(unwrap_ifg_index))
             G = [ones(length(unwrap_ifg_index), 1), ps.day(unwrap_ifg_index) - ps.day(ps.master_ix)];
             # m=lscov(G,[uw.ph_uw(:,unwrap_ifg_index)-ph_scla(:,unwrap_ifg_index)]',ifg_vcm(unwrap_ifg_index,unwrap_ifg_index));
