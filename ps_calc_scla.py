@@ -30,7 +30,8 @@ def ps_calc_scla(use_small_baselines, coest_mean_vel):
 
     # TODO: Implement getparm() function
     small_baseline_flag = getparm('small_baseline_flag')[0][0]
-    drop_ifg_index = getparm('drop_ifg_index')[0] # TODO: проверить, когда, например, drop_ifg_index=[0] индекс указан для нумерации индексов в python
+    drop_ifg_index = getparm('drop_ifg_index')[
+        0]  # TODO: проверить, когда, например, drop_ifg_index=[0] индекс указан для нумерации индексов в python
     scla_method = getparm('scla_method')[0][0]
     scla_deramp = getparm('scla_deramp')[0][0]
     subtr_tropo = getparm('subtr_tropo')[0][0]
@@ -266,16 +267,19 @@ def ps_calc_scla(use_small_baselines, coest_mean_vel):
     if use_small_baselines == 0:
         unwrap_ifg_index = np.setdiff1d(unwrap_ifg_index, ps['master_ix'][0][0] - 1);
         if coest_mean_vel == 0:
-            print()
-            # C_ps_uw=mean(uw.ph_uw(:,unwrap_ifg_index)-ph_scla(:,unwrap_ifg_index),2);
+            C_ps_uw = np.array([np.mean(uw['ph_uw'][:, unwrap_ifg_index] - ph_scla[:, unwrap_ifg_index], 1)]).T
         else:
             # !!!!!!!!!!! ВАЖНО !!!!!!!!!!
             # TODO: В matlab индексация идет с 1 и поэтому ps['master_ix'][0][0] = master_ix (например, 5), в python это должно быть master_ix-1 (например, 4)
             # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            # np.ones(len(unwrap_ifg_index))
-            G = [ones(length(unwrap_ifg_index), 1), ps.day(unwrap_ifg_index) - ps.day(ps.master_ix)];
-            # m=lscov(G,[uw.ph_uw(:,unwrap_ifg_index)-ph_scla(:,unwrap_ifg_index)]',ifg_vcm(unwrap_ifg_index,unwrap_ifg_index));
-            # C_ps_uw=m(1,:)';
+            G = np.hstack((np.array([np.ones(len(unwrap_ifg_index))]).T,
+                           ps['day'][unwrap_ifg_index] - ps['day'][ps['master_ix'] - 1][0]))
+            # solving x = inv(A'*inv(V)*A)*A'*inv(V)*B, L2-norm
+            A = G
+            B = np.array(uw['ph_uw'][:, unwrap_ifg_index] - ph_scla[:, unwrap_ifg_index]).T
+            V = ifg_vcm[unwrap_ifg_index, :][:, unwrap_ifg_index]
+            m = (((np.linalg.inv((A.T.dot(np.linalg.inv(V)).dot(A)))).dot(A.T)).dot(np.linalg.inv(V))).dot(B)
+            C_ps_uw = np.array([m[0, :]]).T
     else:
         print("You set the param use_small_baselines={}, but not supported yet.".format(
             getparm('use_small_baselines')[0][0]))
