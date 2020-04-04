@@ -79,7 +79,13 @@ def ps_calc_scla(use_small_baselines, coest_mean_vel):
     if use_small_baselines == 0:
         os.system('rm -f ' + meanvname + '.mat')
 
+    # !!!!!!!!!!! ВАЖНО !!!!!!!!!!
     ps = loadmat(psname + '.mat')
+    # TODO: убрать когда будет сделаны предыдущие этапы.
+    # TODO: в matlab индексация идет с 1 и поэтому ps['master_ix'][0][0] = master_ix (например, 5), в python это должно быть master_ix-1 (например, 4)
+    ps['master_ix'][0][0] = ps['master_ix'][0][0] - 1
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
     bp = {}
     if os.path.exists(bpname + '.mat'):
         bp = loadmat(bpname + '.mat')
@@ -259,5 +265,23 @@ def ps_calc_scla(use_small_baselines, coest_mean_vel):
             K_ps_uw[i] = m2[1]
             if i % 10000 == 0:
                 print('{} of {} pixels processed'.format(i, ps['n_ps'][0][0]))
+
+    ph_scla = np.multiply(np.tile(K_ps_uw, (1, len(bperp_mat[0]))), bperp_mat)
+
+    if use_small_baselines == 0:
+        unwrap_ifg_index = np.setdiff1d(unwrap_ifg_index, ps['master_ix'][0][0] - 1);
+        if coest_mean_vel == 0:
+            print()
+            # C_ps_uw=mean(uw.ph_uw(:,unwrap_ifg_index)-ph_scla(:,unwrap_ifg_index),2);
+        else:
+            # np.ones(len(unwrap_ifg_index))
+            G = [ones(length(unwrap_ifg_index), 1), ps.day(unwrap_ifg_index) - ps.day(ps.master_ix)];
+            # m=lscov(G,[uw.ph_uw(:,unwrap_ifg_index)-ph_scla(:,unwrap_ifg_index)]',ifg_vcm(unwrap_ifg_index,unwrap_ifg_index));
+            # C_ps_uw=m(1,:)';
+    else:
+        print("You set the param use_small_baselines={}, but not supported yet.".format(
+            getparm('use_small_baselines')[0][0]))
+        sys.exit(0)
+        # C_ps_uw=zeros(ps.n_ps,1);
 
     print()
