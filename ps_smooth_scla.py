@@ -22,3 +22,10 @@ def ps_smooth_scla(use_small_baselines):
         sys.exit(0)
         # sclaname=['scla_sb',num2str(psver)];
         # sclasmoothname=['scla_smooth_sb',num2str(psver)];
+
+    ps = loadmat(psname + '.mat')
+    scla = loadmat(sclaname + '.mat')
+    K_ps_uw = scla['K_ps_uw']
+    C_ps_uw = scla['C_ps_uw']
+    ph_ramp = scla['ph_ramp']
+    scla.clear()
