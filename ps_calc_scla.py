@@ -1,9 +1,10 @@
 import os, sys
-from datetime import date
+import shutil
+from datetime import date, datetime
 from inspect import signature
 
 import numpy as np
-from scipy.io import loadmat
+from scipy.io import loadmat, savemat
 from scipy.optimize import fmin, minimize
 
 from getparm import get_parm_value as getparm
@@ -30,8 +31,10 @@ def ps_calc_scla(use_small_baselines, coest_mean_vel):
 
     # TODO: Implement getparm() function
     small_baseline_flag = getparm('small_baseline_flag')[0][0]
-    drop_ifg_index = getparm('drop_ifg_index')[
-        0]  # TODO: проверить, когда, например, drop_ifg_index=[0] индекс указан для нумерации индексов в python
+
+    # TODO: проверить, когда, например, drop_ifg_index=[0] индекс указан для нумерации индексов в python
+    drop_ifg_index = getparm('drop_ifg_index')[0]
+
     scla_method = getparm('scla_method')[0][0]
     scla_deramp = getparm('scla_deramp')[0][0]
     subtr_tropo = getparm('subtr_tropo')[0][0]
@@ -78,7 +81,8 @@ def ps_calc_scla(use_small_baselines, coest_mean_vel):
         # apsname = 'tca_sb' + str(psver)  # the new tca option
 
     if use_small_baselines == 0:
-        os.system('rm -f ' + meanvname + '.mat')
+        if os.path.exists(meanvname + '.mat'):
+            os.system('rm -f ' + meanvname + '.mat')
 
     ps = loadmat(psname + '.mat')
 
@@ -196,7 +200,7 @@ def ps_calc_scla(use_small_baselines, coest_mean_vel):
     bp.clear()
 
     bprint = np.mean(bperp, 0)
-    print('PS_CALC_SCLA: {} ifgs used in estimation:'.format(len(ph[0])))
+    print('\nPS_CALC_SCLA: {} ifgs used in estimation:'.format(len(ph[0])))
 
     for i in range(len(ph[0])):
         if use_small_baselines != 0:
@@ -286,4 +290,16 @@ def ps_calc_scla(use_small_baselines, coest_mean_vel):
         sys.exit(0)
         # C_ps_uw=zeros(ps.n_ps,1);
 
-    print()
+    if os.path.exists(sclaname + '.mat'):
+        olddatenum = os.path.getmtime(sclaname + '.mat')
+        shutil.move(sclaname + '.mat',
+                    'tmp_' + sclaname + datetime.fromtimestamp(olddatenum).strftime('_%Y%m%d_%H%M%S') + '.mat')
+
+    scla = {
+        'ph_scla': ph_scla,
+        'K_ps_uw': K_ps_uw,
+        'C_ps_uw': C_ps_uw,
+        'ph_ramp': ph_ramp,
+        'ifg_vcm': ifg_vcm
+    }
+    savemat(sclaname + '.mat', scla)

@@ -1,3 +1,4 @@
+import sys
 import argparse
 from ps_calc_scla import ps_calc_scla
 
@@ -16,3 +17,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     main(args)
+    sys.exit(0)
