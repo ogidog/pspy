@@ -38,7 +38,6 @@ def ps_smooth_scla(use_small_baselines):
 
     print('Number of points per ifg: {}'.format(n_ps))
 
-    edgs = []
     xy = ps['xy']
     tri = triangulate({'vertices': xy[:, 1:]}, opts='e')
     edgs = tri['edges']
@@ -58,5 +57,10 @@ def ps_smooth_scla(use_small_baselines):
         Cneigh_max[ix] = np.amax(np.concatenate((Cneigh_max[ix], C_ps_uw[np.flip(ix)]), axis=1), axis=1).reshape(-1, 1)
         if i % 100000 == 0:
             print('{} arcs processed'.format(i))
+
+    ix1 = K_ps_uw > Kneigh_max;
+    ix2 = K_ps_uw < Kneigh_min;
+    K_ps_uw[ix1] = Kneigh_max[ix1]
+    K_ps_uw[ix2] = Kneigh_min[ix2]
 
     print()
