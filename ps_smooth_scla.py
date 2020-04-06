@@ -1,8 +1,7 @@
 import os, sys, platform
+import numpy as np
 
-from collections import defaultdict
-from itertools import permutations
-
+4
 from scipy.io import loadmat, savemat
 from scipy.spatial import Delaunay
 
@@ -41,22 +40,26 @@ def ps_smooth_scla(use_small_baselines):
 
     print('Number of points per ifg: {}'.format(n_ps))
 
-    arch = platform.platform().split('-')[0].lower()
-    if arch == 'windows':
-        use_triangle = 'n'
-    else:
-        tripath = os.system('which triangle > /dev/null');
-        if tripath == 0:
-            use_triangle = 'y'
-        else:
-            use_triangle = 'n';
+    edgs = []
+    xy = ps['xy']
+    tri = Delaunay(xy[:, 1:])
+    for vertices in tri.simplices:
+        edgs.append([vertices[0], vertices[1]])
+        edgs.append([vertices[1], vertices[2]])
+        edgs.append([vertices[2], vertices[0]])
 
-    if use_triangle == 'y':
-        nodename = 'scla.1.node'
-    else:
-        xy = ps['xy']
-        tri = Delaunay(xy[:, 1:])
-        n_edge = 3 * tri.npoints - 3 - len(tri.convex_hull)
+    for edge in edgs:
+        if edgs.count([edgs[0][0], edgs[0][1]]) > 1 or edgs.count([edgs[0][1], edgs[0][0]]) > 1:
+            print(edge)
 
+    # result = list(filter(lambda el: (edgs.count([el[0], el[1]]) + edgs.count([el[1], el[0]]) == 1), edgs))
+    n_edge = 3 * tri.npoints - 3 - len(tri.convex_hull)
     print('Number of arcs per ifg: {}'.format(n_edge))
 
+    Kneigh_min = np.full((n_ps, 1), np.float('inf'))
+    Kneigh_max = np.full((n_ps, 1), np.float('-inf'))
+    Cneigh_min = np.full((n_ps, 1), np.float('inf'))
+    Cneigh_max = np.full((n_ps, 1), np.float('-inf'))
+
+    for i in range(n_edge):
+        print()
