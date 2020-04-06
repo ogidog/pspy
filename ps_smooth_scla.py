@@ -1,10 +1,8 @@
-import os, sys, platform
+import sys
 import numpy as np
+from triangle import triangulate
 
-4
 from scipy.io import loadmat, savemat
-from scipy.spatial import Delaunay
-
 from getparm import get_parm_value as getparm
 
 
@@ -42,18 +40,9 @@ def ps_smooth_scla(use_small_baselines):
 
     edgs = []
     xy = ps['xy']
-    tri = Delaunay(xy[:, 1:])
-    for vertices in tri.simplices:
-        edgs.append([vertices[0], vertices[1]])
-        edgs.append([vertices[1], vertices[2]])
-        edgs.append([vertices[2], vertices[0]])
-
-    for edge in edgs:
-        if edgs.count([edgs[0][0], edgs[0][1]]) > 1 or edgs.count([edgs[0][1], edgs[0][0]]) > 1:
-            print(edge)
-
-    # result = list(filter(lambda el: (edgs.count([el[0], el[1]]) + edgs.count([el[1], el[0]]) == 1), edgs))
-    n_edge = 3 * tri.npoints - 3 - len(tri.convex_hull)
+    tri = triangulate({'vertices': xy[:, 1:]}, opts='e')
+    edgs = tri['edges']
+    n_edge = len(edgs)
     print('Number of arcs per ifg: {}'.format(n_edge))
 
     Kneigh_min = np.full((n_ps, 1), np.float('inf'))
@@ -62,4 +51,12 @@ def ps_smooth_scla(use_small_baselines):
     Cneigh_max = np.full((n_ps, 1), np.float('-inf'))
 
     for i in range(n_edge):
-        print()
+        ix = edgs[i, 0:2]
+        Kneigh_min[ix] = np.amin(np.concatenate((Kneigh_min[ix], K_ps_uw[np.flip(ix)]), axis=1), axis=1).reshape(-1, 1)
+        Kneigh_max[ix] = np.amax(np.concatenate((Kneigh_max[ix], K_ps_uw[np.flip(ix)]), axis=1), axis=1).reshape(-1, 1)
+        Cneigh_min[ix] = np.amin(np.concatenate((Cneigh_min[ix], C_ps_uw[np.flip(ix)]), axis=1), axis=1).reshape(-1, 1)
+        Cneigh_max[ix] = np.amax(np.concatenate((Cneigh_max[ix], C_ps_uw[np.flip(ix)]), axis=1), axis=1).reshape(-1, 1)
+        if i % 100000 == 0:
+            print('{} arcs processed'.format(i))
+
+    print()
