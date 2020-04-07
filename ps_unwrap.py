@@ -58,15 +58,13 @@ def ps_unwrap():
         sys.exit()
         # bperp_mat=bp.bperp_mat;
 
-    сделать
     if unwrap_patch_phase == 'y':
-        print()
-        # pm=load(pmname);
-        # ph_w=pm.ph_patch./abs(pm.ph_patch);
-        # pm.clear()
-        # if small_baseline_flag!='y':
-        #    ph_w=[ph_w(:,1:ps.master_ix-1),ones(ps.n_ps,1),ph_w(:,ps.master_ix:end)];
-
+        pm = loadmat(pmname);
+        ph_w = np.divide(pm['ph_patch'], np.abs(pm['ph_patch']))
+        pm.clear()
+        if small_baseline_flag != 'y':
+            ph_w = np.concatenate((ph_w[:, 0:ps['master_ix'][0][0] - 1], np.ones((ps['n_ps'][0][0], 1)),
+                                   ph_w[:, ps['master_ix'][0][0] - 1:]), axis=1)
     else:
         rc = loadmat(rcname + '.mat')
         ph_w = rc['ph_rc']
@@ -77,5 +75,11 @@ def ps_unwrap():
                 if bool(pm['K_ps'][0]):
                     ph_w = np.multiply(ph_w, np.exp(
                         np.multiply(complex(0.0, 1.0) * np.tile(pm['K_ps'], (1, ps['n_ifg'][0][0])), bperp_mat)))
+
+    ix = np.array([ph_w[i, :] != 0 for i in range(len(ph_w))])
+    ph_w[ix] = np.divide(ph_w[ix], np.abs(ph_w[ix]))
+
+    scla_subtracted_sw = 0
+    ramp_subtracted_sw = 0
 
     print()
