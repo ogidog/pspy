@@ -95,4 +95,12 @@ def ps_smooth_scla(use_small_baselines):
         sys.exit(0)
         # bperp_mat=bp.bperp_mat;
 
-    print()
+    ph_scla = np.multiply(np.tile(K_ps_uw, (1, len(bperp_mat[0]))), bperp_mat)
+
+    sclasmooth = {
+        'K_ps_uw': K_ps_uw,
+        'C_ps_uw': C_ps_uw,
+        'ph_scla': ph_scla,
+        'ph_ramp': ph_ramp
+    }
+    savemat(sclasmoothname + '.mat', sclasmooth)
