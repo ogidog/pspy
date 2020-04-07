@@ -63,4 +63,36 @@ def ps_smooth_scla(use_small_baselines):
     K_ps_uw[ix1] = Kneigh_max[ix1]
     K_ps_uw[ix2] = Kneigh_min[ix2]
 
+    ix1 = C_ps_uw > Cneigh_max;
+    ix2 = C_ps_uw < Cneigh_min;
+    C_ps_uw[ix1] = Cneigh_max[ix1]
+    C_ps_uw[ix2] = Cneigh_min[ix2]
+
+    bp = loadmat(bpname + '.mat')
+
+    if use_small_baselines == 0:
+        if small_baseline_flag == 'y':
+            print("You set the param small_baseline_flag={}, but not supported yet.".format(
+                getparm('small_baseline_flag')[0][0]))
+            sys.exit(0)
+            # bperp_mat=zeros(ps.n_ps,ps.n_image-1);
+            # G=zeros(ps.n_ifg,ps.n_image);
+            # for i=1:ps.n_ifg
+            #    G(i,ps.ifgday_ix(i,1))=-1;
+            #    G(i,ps.ifgday_ix(i,2))=1;
+            # end
+            # G=G(:,[1:ps.master_ix-1,ps.master_ix+1:end]);
+            # bperp_mat=[G\double(bp.bperp_mat')]';
+            # bperp_mat=[bperp_mat(:,1:ps.master_ix-1),zeros(ps.n_ps,1,'single'),bperp_mat(:,ps.master_ix:end)];
+        else:
+            bperp_mat = np.concatenate((np.concatenate(
+                (bp['bperp_mat'][:, 0:ps['master_ix'][0][0] - 1], np.zeros(ps['n_ps'][0][0]).reshape(-1, 1)), axis=1),
+                                        bp['bperp_mat'][:, ps['master_ix'][0][0] - 1:]), axis=1)
+
+    else:
+        print("You set the param use_small_baselines={}, but not supported yet.".format(
+            getparm('use_small_baselines')[0][0]))
+        sys.exit(0)
+        # bperp_mat=bp.bperp_mat;
+
     print()
