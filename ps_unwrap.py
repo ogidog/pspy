@@ -1,5 +1,6 @@
 import os, sys
 import numpy as np
+import cmath
 
 from scipy.io import loadmat, savemat
 from getparm import get_parm_value as getparm
@@ -47,12 +48,34 @@ def ps_unwrap():
             bperp = np.concatenate((bperp[:ps['master_ix'][0][0] - 1], bperp[ps['master_ix'][0][0]:]), axis=0)
         bp['bperp_mat'] = np.tile(bperp.T, (ps['n_ps'][0][0], 1))
 
-    if small_baseline_flag!='y':
-        bperp_mat=[bp.bperp_mat(:,1:ps.master_ix-1),zeros(ps.n_ps,1,'single'),bp.bperp_mat(:,ps.master_ix:end)];
+    if small_baseline_flag != 'y':
+        bperp_mat = np.concatenate((bp['bperp_mat'][:, 0:ps['master_ix'][0][0] - 1],
+                                    np.zeros(ps['n_ps'][0][0]).reshape(-1, 1),
+                                    bp['bperp_mat'][:, ps['master_ix'][0][0] - 1:]), axis=1)
     else:
         print("You set the param small_baseline_flag={}, but not supported yet.".format(
             getparm('small_baseline_flag')[0][0]))
         sys.exit()
         # bperp_mat=bp.bperp_mat;
+
+    сделать
+    if unwrap_patch_phase == 'y':
+        print()
+        # pm=load(pmname);
+        # ph_w=pm.ph_patch./abs(pm.ph_patch);
+        # pm.clear()
+        # if small_baseline_flag!='y':
+        #    ph_w=[ph_w(:,1:ps.master_ix-1),ones(ps.n_ps,1),ph_w(:,ps.master_ix:end)];
+
+    else:
+        rc = loadmat(rcname + '.mat')
+        ph_w = rc['ph_rc']
+        rc.clear()
+        if os.path.exists(pmname + '.mat'):
+            pm = loadmat(pmname + '.mat')
+            if 'K_ps' in pm.keys():
+                if bool(pm['K_ps'][0]):
+                    ph_w = np.multiply(ph_w, np.exp(
+                        np.multiply(complex(0.0, 1.0) * np.tile(pm['K_ps'], (1, ps['n_ifg'][0][0])), bperp_mat)))
 
     print()
