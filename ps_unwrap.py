@@ -1,9 +1,9 @@
 import os, sys
 import numpy as np
-import cmath
 
 from scipy.io import loadmat, savemat
 from getparm import get_parm_value as getparm
+from uw_3d import uw_3d
 
 
 def ps_unwrap():
@@ -82,7 +82,7 @@ def ps_unwrap():
     scla_subtracted_sw = 0
     ramp_subtracted_sw = 0
 
-    options = {'master_day', ps['master_day'][0][0]}
+    options = {'master_day': ps['master_day'][0][0]}
     unwrap_hold_good_values = getparm('unwrap_hold_good_values')[0][0]
     if small_baseline_flag != 'y' or os.path.exists(phuwname + '.mat'):
         unwrap_hold_good_values = 'n';
@@ -110,18 +110,111 @@ def ps_unwrap():
             scla_subtracted_sw = 1
             ph_w = np.multiply(ph_w, np.exp(
                 np.multiply(complex(0.0, -1.0) * np.tile(scla['K_ps_uw'], (1, ps['n_ifg'][0][0])), bperp_mat)))
-            ph_w=np.multiply(ph_w,np.tile())
-            ph_w=ph_w.*repmat(exp(-j*scla.C_ps_uw),1,ps.n_ifg)
+            ph_w = np.multiply(ph_w, np.tile(np.exp(complex(0.0, -1.0) * scla['C_ps_uw']), (1, ps['n_ifg'][0][0])))
 
-        #    if strcmpi(scla_deramp,'y') & isfield(scla,'ph_ramp') & size(scla.ph_ramp,1)==ps.n_ps
-        #        ramp_subtracted_sw=1;
-        #        ph_w=ph_w.*exp(-j*scla.ph_ramp); % subtract orbital ramps
-        #    end
-        # else
-        #    fprintf('   wrong number of PS in scla - subtraction skipped...\n')
-        #    delete([sclaname,'.mat'])
-        # end
-        # clear scla
+            if scla_deramp == 'y' and 'ph_ramp' in scla.keys() and len(scla['ph_ramp']) == ps['n_ps'][0][0]:
+                ramp_subtracted_sw = 1
+                ph_w = np.multiply(ph_w, np.exp(complex(0.0, -1.0) * scla['ph_ramp']))
+        else:
+            print('   wrong number of PS in scla - subtraction skipped...\n')
+            os.remove(sclaname + '.mat')
+        scla.clear()
+
+    if small_baseline_flag == 'y' and os.path.exists(sclaname + '.mat'):
+        print("You set the param small_baseline_flag={}, but not supported yet.".format(
+            getparm('small_baseline_flag')[0][0]))
+        sys.exit()
+    #    fprintf('   subtracting scla...\n')
+    #    scla=load(sclaname);
+    #    if size(scla.K_ps_uw,1)==ps.n_ps
+    #        scla_subtracted_sw=1;
+    #        ph_w=ph_w.*exp(-j*repmat(scla.K_ps_uw,1,ps.n_ifg).*bperp_mat); % subtract spatially correlated look angle error
+    #        if unwrap_hold_good_values=='y'
+    #            options.ph_uw_predef=options.ph_uw_predef-repmat(scla.K_ps_uw,1,ps.n_ifg).*bperp_mat; % subtract spatially correlated look angle error
+    #        end
+    #        if strcmpi(scla_deramp,'y') & isfield(scla,'ph_ramp') & size(scla.ph_ramp,1)==ps.n_ps
+    #           ramp_subtracted_sw=1;
+    #           ph_w=ph_w.*exp(-j*scla.ph_ramp); % subtract orbital ramps
+    #           if unwrap_hold_good_values=='y'
+    #               options.ph_uw_predef=options.ph_uw_predef-scla.ph_ramp;
+    #           end
+    #       end
+    #   else
+    #       fprintf('   wrong number of PS in scla - subtraction skipped...\n')
+    #       delete([sclaname,'.mat'])
+    #   end
+    #   clear scla
     # end
+
+    bp.clear()
+
+    if os.path.exists(apsname + '.mat') and subtr_tropo == 'y':
+        print("You set the param subtr_tropo={}, but not supported yet.".format(
+            getparm('subtr_tropo')[0][0]))
+        sys.exit()
+    #    fprintf('   subtracting slave aps...\n')
+    #    aps=load(apsname);
+    #    [aps_corr,fig_name_tca,aps_flag] = ps_plot_tca(aps,aps_name);
+
+    #   ph_w=ph_w.*exp(-j*aps_corr);
+    #    if unwrap_hold_good_values=='y'
+    #        options.ph_uw_predef=options.ph_uw_predef-aps_corr;
+    #   end
+    #   clear aps
+
+    options['time_win'] = getparm('unwrap_time_win')[0][0][0]
+    options['unwrap_method'] = getparm('unwrap_method')[0][0]
+    options['grid_size'] = getparm('unwrap_grid_size')[0][0][0]
+    options['prefilt_win'] = getparm('unwrap_gold_n_win')[0][0][0]
+    options['goldfilt_flag'] = getparm('unwrap_prefilter_flag')[0][0]
+    options['gold_alpha'] = getparm('unwrap_gold_alpha')[0][0][0]
+    options['la_flag'] = getparm('unwrap_la_error_flag')[0][0]
+    options['scf_flag'] = getparm('unwrap_spatial_cost_func_flag')[0][0]
+
+    max_topo_err = getparm('max_topo_err')[0][0][0]
+    _lambda = getparm('lambda')[0][0][0]
+
+    rho = 830000
+    if 'mean_incidence' in ps.keys():
+        inc_mean = ps['mean_incidence'][0][0]
+    else:
+        laname = 'la' + str(psver)
+        if os.path.exists(laname + '.mat'):
+            la = loadmat(laname + '.mat')
+            inc_mean = np.mean(la['la']) + 0.052
+            la.clear()
+        else:
+            inc_mean = 21 * np.pi / 180.0
+    max_K = max_topo_err / (_lambda * rho * np.sin(inc_mean) / 4 / np.pi)
+
+    bperp_range = np.amax(ps['bperp']) - np.amin(ps['bperp'])
+    options['n_trial_wraps'] = (bperp_range * max_K / (2 * np.pi))
+    print('n_trial_wraps={}'.format(options['n_trial_wraps']))
+
+    if small_baseline_flag == 'y':
+        print("You set the param small_baseline_flag={}, but not supported yet.".format(
+            getparm('small_baseline_flag')[0][0]))
+        sys.exit()
+        # %options.lowfilt_flag='y';
+        # options.lowfilt_flag='n';
+        # ifgday_ix=ps.ifgday_ix;
+        # day=ps.day-ps.master_day;
+    else:
+        lowfilt_flag = 'n'
+        ifgday_ix = np.concatenate((np.ones((ps['n_ifg'][0][0], 1)) * ps['master_ix'],
+                                    np.array([x for x in range(ps['n_ifg'][0][0])]).reshape(-1, 1)), axis=1).astype(
+            'int')
+        master_ix = np.sum(ps['master_day'] > ps['day']) + 1
+        unwrap_ifg_index = np.setdiff1d(unwrap_ifg_index, master_ix - 1)
+        day = ps['day'] - ps['master_day']
+
+    if unwrap_hold_good_values == 'y':
+        print("You set the param unwrap_hold_good_values={}, but not supported yet.".format(
+            getparm('small_baseline_flag')[0][0]))
+        sys.exit()
+        # options.ph_uw_predef=options.ph_uw_predef(:,unwrap_ifg_index);
+
+    [ph_uw_some, msd_some] = uw_3d(ph_w[:, unwrap_ifg_index], ps['xy'], day, ifgday_ix[unwrap_ifg_index, :],
+                                   ps['bperp'][unwrap_ifg_index], options)
 
     print()
