@@ -82,4 +82,46 @@ def ps_unwrap():
     scla_subtracted_sw = 0
     ramp_subtracted_sw = 0
 
+    options = {'master_day', ps['master_day'][0][0]}
+    unwrap_hold_good_values = getparm('unwrap_hold_good_values')[0][0]
+    if small_baseline_flag != 'y' or os.path.exists(phuwname + '.mat'):
+        unwrap_hold_good_values = 'n';
+        print('Code to hold good values skipped')
+
+    if unwrap_hold_good_values == 'y':
+        print("You set the param unwrap_hold_good_values={}, but not supported yet.".format(
+            getparm('unwrap_hold_good_values')[0][0]))
+        sys.exit()
+        # sb_identify_good_pixels
+        # options.ph_uw_predef=nan(size(ph_w),'single');
+        # uw=load(phuwname);
+        # good=load(goodname);
+        # if ps.n_ps==size(good.good_pixels,1) & ps.n_ps==size(uw.ph_uw,1)
+        #    options.ph_uw_predef(good.good_pixels)=uw.ph_uw(good.good_pixels);
+        # else
+        #    fprintf('   wrong number of PS in keep good pixels - skipped...\n')
+        # end
+        # clear uw good;
+
+    if small_baseline_flag != 'y' and os.path.exists(sclaname + '.mat'):
+        print('   subtracting scla and master aoe...\n')
+        scla = loadmat(sclaname + '.mat')
+        if len(scla['K_ps_uw']) == ps['n_ps'][0][0]:
+            scla_subtracted_sw = 1
+            ph_w = np.multiply(ph_w, np.exp(
+                np.multiply(complex(0.0, -1.0) * np.tile(scla['K_ps_uw'], (1, ps['n_ifg'][0][0])), bperp_mat)))
+            ph_w=np.multiply(ph_w,np.tile())
+            ph_w=ph_w.*repmat(exp(-j*scla.C_ps_uw),1,ps.n_ifg)
+
+        #    if strcmpi(scla_deramp,'y') & isfield(scla,'ph_ramp') & size(scla.ph_ramp,1)==ps.n_ps
+        #        ramp_subtracted_sw=1;
+        #        ph_w=ph_w.*exp(-j*scla.ph_ramp); % subtract orbital ramps
+        #    end
+        # else
+        #    fprintf('   wrong number of PS in scla - subtraction skipped...\n')
+        #    delete([sclaname,'.mat'])
+        # end
+        # clear scla
+    # end
+
     print()
