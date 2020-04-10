@@ -128,4 +128,17 @@ def uw_grid_wrapped(*args):
             else:
                 ph_lowpass = []
 
+            if predef_flag == 'y':
+                not_supported_param('predef_flag', 'y')
+                # ph_uw_predef=zeros(n_ps_grid,n_ifg,'single');
+            else:
+                ph_uw_predef = []
+
+            if goldfilt_flag == 'y' or lowfilt_flag == 'y':
+                print()
+                # [ph_this_gold,ph_this_low]=wrap_filt(ph_grid,prefilt_win,gold_alpha,[],lowfilt_flag);
+                #    if strcmpi(lowfilt_flag,'y')
+                #        ph_lowpass(:,i1)=ph_this_low(nzix);
+                # end
+
             print()
