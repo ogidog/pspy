@@ -1,4 +1,6 @@
 import numpy as np
+from warning import not_supported_param
+from getparm import get_parm_value as getparm
 
 
 def uw_grid_wrapped(*args):
@@ -53,6 +55,7 @@ def uw_grid_wrapped(*args):
         n_i = int(np.amax(xy_in[:, 2]))
         n_j = int(np.amax(xy_in[:, 1]))
         grid_ij = np.concatenate((xy_in[:, 2].reshape(-1, 1), xy_in[:, 1].reshape(-1, 1)), axis=1)
+        grid_ij = grid_ij.astype('int')
     else:
         grid_x_min = np.amin(xy_in[:, 1])
         grid_y_min = np.amin(xy_in[:, 2])
@@ -62,6 +65,8 @@ def uw_grid_wrapped(*args):
         grid_ij = np.concatenate((grid_ij, np.ceil((xy_in[:, 1] - grid_x_min + 0.001) / pix_size).reshape(-1, 1)),
                                  axis=1)
         grid_ij[grid_ij[:, 1] == np.max(grid_ij[:, 1]), 1] = np.max(grid_ij[:, 1]) - 1
+
+        grid_ij = grid_ij.astype('int')
 
         n_i = int(np.amax(grid_ij[:, 0]))
         n_j = int(np.amax(grid_ij[:, 1]))
@@ -82,4 +87,22 @@ def uw_grid_wrapped(*args):
         else:
             ph_this = ph_in[:, i1]
 
+        if predef_flag == 'y':
+            not_supported_param('predef_flag', 'y')
+            # ph_this_uw = ph_in_predef[:, i1]
+            # ph_grid_uw[:] = 0
+            # N_grid_uw[:] = 0
+
+        ph_grid[:] = 0
+
+        if pix_size == 0:
+            not_supported_param('pix_size', 0)
+            # ph_grid((xy_in(:,2)-1)*n_i+xy_in(:,3))=ph_this;
+            # if predef_flag=='y':
+            #    ph_grid_uw((xy_in(:,2)-1)*n_i+xy_in(:,3))=ph_this_uw;
+        else:
+            ph_grid=ph_grid.astype('complex')
+            for i in range(0, n_ps):
+                ph_grid[grid_ij[i, 0] - 1, grid_ij[i, 1] - 1] = ph_grid[grid_ij[i, 0] - 1, grid_ij[i, 1] - 1] + ph_this[
+                    i]
         print()
