@@ -1,6 +1,6 @@
 import numpy as np
 from warning import not_supported_param
-from getparm import get_parm_value as getparm
+from wrap_filt import wrap_filt
 
 
 def uw_grid_wrapped(*args):
@@ -117,7 +117,7 @@ def uw_grid_wrapped(*args):
             #    ph_grid_uw=ph_grid_uw./N_grid_uw;
             #    %ph_grid_uw(ph_grid_uw==inf)=nan;
 
-        if i1 == 1:
+        if i1 == 0:
             nzix = ph_grid[:] != 0
             n_ps_grid = np.sum(nzix)
             ph = np.zeros((n_ps_grid, n_ifg), dtype='int')
@@ -134,11 +134,12 @@ def uw_grid_wrapped(*args):
             else:
                 ph_uw_predef = []
 
+            goldfilt_flag = args[4]
             if goldfilt_flag == 'y' or lowfilt_flag == 'y':
-                print()
-                # [ph_this_gold,ph_this_low]=wrap_filt(ph_grid,prefilt_win,gold_alpha,[],lowfilt_flag);
-                #    if strcmpi(lowfilt_flag,'y')
+                gold_alpha = args[6]
+                [ph_this_gold, ph_this_low] = wrap_filt(ph_grid, prefilt_win, gold_alpha, [], lowfilt_flag);
+                #   if strcmpi(lowfilt_flag,'y')
                 #        ph_lowpass(:,i1)=ph_this_low(nzix);
-                # end
+                #   end
 
             print()
