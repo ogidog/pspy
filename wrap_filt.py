@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 from scipy import signal
 
@@ -49,6 +50,7 @@ def wrap_filt(*args):
     L = np.fft.ifftshift((signal.gaussian(N, std=std).reshape(-1, 1)) * signal.gaussian(N, std=std))
 
     # TODO: может быть ошибка
+    alpha = args[2]
     for ix1 in range(1, n_win_i + 1):
         wf = wind_func
         i1 = int((ix1 - 1) * n_inc + 1)
@@ -75,6 +77,25 @@ def wrap_filt(*args):
 
             ph_bit = ph_bit.astype('complex')
             ph_bit[0:n_win, 0:n_win] = ph[i1 - 1:i2, j1 - 1:j2]
+            ph_fft = np.fft.fft2(ph_bit)
+            H = abs(ph_fft)
+            H = np.fft.ifftshift(signal.correlate2d(np.fft.fftshift(H), B, mode='same'))
+            meanH = np.median(H[:])
+            if meanH != 0:
+                H = H / meanH
+            H = np.power(H, alpha)
+            ph_filt = np.fft.ifft2(np.multiply(ph_fft, H))
+            ph_filt = np.multiply(ph_filt[0:n_win, 0:n_win], wf2)
+
+            if low_flag == 'y':
+                ph_filt_low = np.fft.ifft2(np.multiply(ph_fft, L))
+                ph_filt_low = np.multiply(ph_filt_low[0:n_win, 0:n_win], wf2)
+
+            if np.isnan(ph_filt[0, 0]):
+                print('filtered phase contains NaNs in goldstein_filt')
+
+            dddd
+            ph_out[i1 - 1:i2, j1 - 1:j2] = ph_out[i1 - 1:i2, j1 - 1:j2] + ph_filt
 
             print()
 

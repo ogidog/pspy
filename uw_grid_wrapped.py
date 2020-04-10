@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 from warning import not_supported_param
 from wrap_filt import wrap_filt
@@ -10,6 +11,7 @@ def uw_grid_wrapped(*args):
 
     if len(args) < 2:
         print('not enough arguments')
+        sys.exit(0)
 
     if len(args) < 3:
         pix_size = 200
