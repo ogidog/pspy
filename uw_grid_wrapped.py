@@ -101,8 +101,31 @@ def uw_grid_wrapped(*args):
             # if predef_flag=='y':
             #    ph_grid_uw((xy_in(:,2)-1)*n_i+xy_in(:,3))=ph_this_uw;
         else:
-            ph_grid=ph_grid.astype('complex')
+            ph_grid = ph_grid.astype('complex')
             for i in range(0, n_ps):
                 ph_grid[grid_ij[i, 0] - 1, grid_ij[i, 1] - 1] = ph_grid[grid_ij[i, 0] - 1, grid_ij[i, 1] - 1] + ph_this[
                     i]
-        print()
+
+            if predef_flag == 'y':
+                not_supported_param('predef_flag', 'y')
+            #    for i=1:n_ps
+            #        if ~isnan(ph_this_uw(i))
+            #            ph_grid_uw(grid_ij(i,1),grid_ij(i,2))=ph_grid_uw(grid_ij(i,1),grid_ij(i,2))+ph_this_uw(i);
+            #           N_grid_uw(grid_ij(i,1),grid_ij(i,2))=N_grid_uw(grid_ij(i,1),grid_ij(i,2))+1;
+            #        end
+            #    end
+            #    ph_grid_uw=ph_grid_uw./N_grid_uw;
+            #    %ph_grid_uw(ph_grid_uw==inf)=nan;
+
+        if i1 == 1:
+            nzix = ph_grid[:] != 0
+            n_ps_grid = np.sum(nzix)
+            ph = np.zeros((n_ps_grid, n_ifg), dtype='int')
+
+            lowfilt_flag = args[5]
+            if lowfilt_flag == 'y':
+                ph_lowpass = ph
+            else:
+                ph_lowpass = []
+
+            print()
