@@ -75,6 +75,7 @@ def uw_grid_wrapped(*args):
 
     ph_grid = np.zeros((n_i, n_j), dtype=int)
     if predef_flag == 'y':
+        not_supported_param('predef_flag', 'y')
         ph_grid_uw = np.zeros((n_i, n_j), dtype=int)
         N_grid_uw = np.zeros((n_i, n_j), dtype=int)
 
@@ -126,7 +127,8 @@ def uw_grid_wrapped(*args):
 
             lowfilt_flag = args[5]
             if lowfilt_flag == 'y':
-                ph_lowpass = ph
+                not_supported_param('lowfilt_flag', 'y')
+                # ph_lowpass = ph
             else:
                 ph_lowpass = []
 

@@ -1,6 +1,6 @@
-import sys
 import numpy as np
 from scipy import signal
+from warning import not_supported_param
 
 
 def wrap_filt(*args):
@@ -27,6 +27,7 @@ def wrap_filt(*args):
     ph_out = np.zeros((n_i, n_j))
     low_flag = args[4]
     if low_flag == 'y':
+        not_supported_param('low_flag','y')
         ph_out_low = ph_out
     else:
         ph_out_low = []
@@ -88,17 +89,20 @@ def wrap_filt(*args):
             ph_filt = np.multiply(ph_filt[0:n_win, 0:n_win], wf2)
 
             if low_flag == 'y':
-                ph_filt_low = np.fft.ifft2(np.multiply(ph_fft, L))
-                ph_filt_low = np.multiply(ph_filt_low[0:n_win, 0:n_win], wf2)
+                not_supported_param('low_flag','y')
+                # ph_filt_low = np.fft.ifft2(np.multiply(ph_fft, L))
+                # ph_filt_low = np.multiply(ph_filt_low[0:n_win, 0:n_win], wf2)
 
             if np.isnan(ph_filt[0, 0]):
                 print('filtered phase contains NaNs in goldstein_filt')
 
-            dddd
+            ph_out = ph_out.astype('complex')
             ph_out[i1 - 1:i2, j1 - 1:j2] = ph_out[i1 - 1:i2, j1 - 1:j2] + ph_filt
 
-            print()
+            if low_flag == 'y':
+                not_supported_param('low_flag','y')
+                # ph_out_low[i1 - 1:i2, j1 - 1:j2] = ph_out_low[i1 - 1:i2, j1 - 1:j2] + ph_filt_low
 
-    ph_out = ''
-    ph_out_low = ''
+    #ph_out=np.abs(ph).*exp(j*angle(ph_out));
+
     return [ph_out, ph_out_low]
