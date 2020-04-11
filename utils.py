@@ -9,7 +9,7 @@ def not_supported_param(param, value):
 
 
 def compare_objects(obj, obj_name):
-    obj_by_matlab = loadmat('../tmp/' + obj_name + '.mat')[obj_name]
+    obj_by_matlab = loadmat('F:\\Temp\\' + obj_name + '.mat')[obj_name]
     obj_by_py = obj
 
     if len(obj_by_matlab) != 0:

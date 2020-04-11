@@ -1,5 +1,6 @@
 import sys
 import numpy as np
+import functools
 from utils import not_supported_param, compare_objects
 from wrap_filt import wrap_filt
 
@@ -141,11 +142,7 @@ def uw_grid_wrapped(*args):
         goldfilt_flag = args[4]
         if goldfilt_flag == 'y' or lowfilt_flag == 'y':
             gold_alpha = args[6]
-            [ph_this_gold, ph_this_low] = wrap_filt(ph_grid, prefilt_win, gold_alpha, [], lowfilt_flag);
-
-            # TODO:Test
-            # compare_objects(ph_this_gold, 'ph_this_gold')
-            #
+            [ph_this_gold, ph_this_low] = wrap_filt(ph_grid, prefilt_win, gold_alpha, [], lowfilt_flag)
 
             if lowfilt_flag == 'y':
                 not_supported_param('lowfilt_flag', 'y')
@@ -153,8 +150,34 @@ def uw_grid_wrapped(*args):
 
         ph = ph.astype('complex')
         if goldfilt_flag == 'y':
-            ph[:, i1] = ph_this_gold[nzix]
+            ph[:, i1] = np.transpose(ph_this_gold)[np.transpose(nzix)]
         else:
-            ph[:, i1] = ph_grid[nzix]
+            ph[:, i1] = np.transpose(ph_grid)[np.transpose(nzix)]
 
-    print()
+        if predef_flag == 'y':
+            not_supported_param('predef_flag', 'y')
+            # ph_uw_predef(:,i1)=ph_grid_uw(nzix);
+            # ix=~isnan(ph_uw_predef(:,i1));
+            # ph_diff=angle(ph(ix,i1).*conj(exp(j*ph_uw_predef(ix,i1))));
+            # ph_diff(abs(ph_diff)>1)=nan; % if difference is too large, can't be sure which way to round
+            # ph_uw_predef(ix,i1)=ph_uw_predef(ix,i1)+ph_diff; % set so ph_uw is filtered ph + integer num cycles
+
+    # TODO:Test
+    # compare_objects(ph, 'ph')
+    #
+
+    n_ps = n_ps_grid
+    print('   Number of resampled points: {}'.format(n_ps))
+
+    nz_i_tmp = [np.nonzero(ph_grid[:, j]) for j in range(0, len(ph_grid[0]))]
+    nz_i = functools.reduce(lambda a, b: np.concatenate((a, b), axis=1), nz_i_tmp) + 1
+    nz_j = просто брать первые индексы nz_i_tmp по количеству элементов в содержащимся там массиве
+    if pix_size == 0:
+        xy = xy_in
+    else:
+        xy = np.concatenate((np.array([i for i in range(1, n_ps + 1)]).reshape(-1, 1),
+                             ((nz_j - 0.5) * pix_size).reshape(-1, 1), ((nz_i - 0.5) * pix_size).reshape(-1, 1)),
+                            axis=1)
+        xy = xy.astype('int')
+
+        print()
