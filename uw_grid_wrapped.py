@@ -1,6 +1,6 @@
 import sys
 import numpy as np
-from warning import not_supported_param
+from utils import not_supported_param, compare_objects
 from wrap_filt import wrap_filt
 
 
@@ -138,12 +138,23 @@ def uw_grid_wrapped(*args):
             else:
                 ph_uw_predef = []
 
-            goldfilt_flag = args[4]
-            if goldfilt_flag == 'y' or lowfilt_flag == 'y':
-                gold_alpha = args[6]
-                [ph_this_gold, ph_this_low] = wrap_filt(ph_grid, prefilt_win, gold_alpha, [], lowfilt_flag);
-                #   if strcmpi(lowfilt_flag,'y')
-                #        ph_lowpass(:,i1)=ph_this_low(nzix);
-                #   end
+        goldfilt_flag = args[4]
+        if goldfilt_flag == 'y' or lowfilt_flag == 'y':
+            gold_alpha = args[6]
+            [ph_this_gold, ph_this_low] = wrap_filt(ph_grid, prefilt_win, gold_alpha, [], lowfilt_flag);
 
-            print()
+            # TODO:Test
+            # compare_objects(ph_this_gold, 'ph_this_gold')
+            #
+
+            if lowfilt_flag == 'y':
+                not_supported_param('lowfilt_flag', 'y')
+                ph_lowpass[:, i1] = ph_this_low(nzix)
+
+        ph = ph.astype('complex')
+        if goldfilt_flag == 'y':
+            ph[:, i1] = ph_this_gold[nzix]
+        else:
+            ph[:, i1] = ph_grid[nzix]
+
+    print()

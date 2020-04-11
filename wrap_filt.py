@@ -1,6 +1,6 @@
 import numpy as np
 from scipy import signal
-from warning import not_supported_param
+from utils import not_supported_param
 
 
 def wrap_filt(*args):
@@ -27,7 +27,7 @@ def wrap_filt(*args):
     ph_out = np.zeros((n_i, n_j))
     low_flag = args[4]
     if low_flag == 'y':
-        not_supported_param('low_flag','y')
+        not_supported_param('low_flag', 'y')
         ph_out_low = ph_out
     else:
         ph_out_low = []
@@ -89,7 +89,7 @@ def wrap_filt(*args):
             ph_filt = np.multiply(ph_filt[0:n_win, 0:n_win], wf2)
 
             if low_flag == 'y':
-                not_supported_param('low_flag','y')
+                not_supported_param('low_flag', 'y')
                 # ph_filt_low = np.fft.ifft2(np.multiply(ph_fft, L))
                 # ph_filt_low = np.multiply(ph_filt_low[0:n_win, 0:n_win], wf2)
 
@@ -100,9 +100,12 @@ def wrap_filt(*args):
             ph_out[i1 - 1:i2, j1 - 1:j2] = ph_out[i1 - 1:i2, j1 - 1:j2] + ph_filt
 
             if low_flag == 'y':
-                not_supported_param('low_flag','y')
+                not_supported_param('low_flag', 'y')
                 # ph_out_low[i1 - 1:i2, j1 - 1:j2] = ph_out_low[i1 - 1:i2, j1 - 1:j2] + ph_filt_low
 
-    #ph_out=np.abs(ph).*exp(j*angle(ph_out));
+    ph_out = np.multiply(np.abs(ph), np.exp(np.multiply(complex (0.0, 1.0), np.angle(ph_out))))
+    if low_flag == 'y':
+        not_supported_param('low_flag', 'y')
+        # ph_out_low = np.multiply(np.abs(ph), np.exp(np.multiply(complex(0.0, 1.0), np.angle(ph_out_low))))
 
     return [ph_out, ph_out_low]
