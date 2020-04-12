@@ -165,10 +165,6 @@ def uw_grid_wrapped(*args):
             # ph_diff(abs(ph_diff)>1)=nan; % if difference is too large, can't be sure which way to round
             # ph_uw_predef(ix,i1)=ph_uw_predef(ix,i1)+ph_diff; % set so ph_uw is filtered ph + integer num cycles
 
-    # TODO:Test
-    # compare_objects(ph, 'ph')
-    #
-
     n_ps = n_ps_grid
     print('   Number of resampled points: {}'.format(n_ps))
 
