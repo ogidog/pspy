@@ -2,6 +2,7 @@ import sys
 import numpy as np
 
 from uw_grid_wrapped import uw_grid_wrapped
+from uw_interp import uw_interp
 
 
 def uw_3d(*args):
@@ -102,8 +103,12 @@ def uw_3d(*args):
         else:
             options['lowfilt_flag'] = 'y'
 
-    uw_grid_wrapped(ph, xy, options['grid_size'], options['prefilt_win'], options['goldfilt_flag'],
-                    options['lowfilt_flag'],
-                    options['gold_alpha'], options['ph_uw_predef'])
+    # TODO: uncomment
+    # uw_grid_wrapped(ph, xy, options['grid_size'], options['prefilt_win'], options['goldfilt_flag'],
+    #                options['lowfilt_flag'],
+    #                options['gold_alpha'], options['ph_uw_predef'])
+
+    ph = []
+    uw_interp()
 
     return np.array(['ph_uw', 'msd'])

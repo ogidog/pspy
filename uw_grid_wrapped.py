@@ -1,6 +1,9 @@
 import sys
 import numpy as np
 import functools
+
+from scipy.io import savemat
+
 from utils import not_supported_param, compare_objects
 from wrap_filt import wrap_filt
 
@@ -170,14 +173,34 @@ def uw_grid_wrapped(*args):
     print('   Number of resampled points: {}'.format(n_ps))
 
     nz_i_tmp = [np.nonzero(ph_grid[:, j]) for j in range(0, len(ph_grid[0]))]
-    nz_i = functools.reduce(lambda a, b: np.concatenate((a, b), axis=1), nz_i_tmp) + 1
-    nz_j = просто брать первые индексы nz_i_tmp по количеству элементов в содержащимся там массиве
+    nz_i = (functools.reduce(lambda a, b: np.concatenate((a, b), axis=1), nz_i_tmp) + 1).reshape(-1, 1)
+    nz_j_tmp = [np.tile(j + 1, len(nz_i_tmp[j][0])) for j in range(0, len(nz_i_tmp))]
+    nz_j = functools.reduce(lambda a, b: np.concatenate((a, b), axis=0), nz_j_tmp).reshape(-1, 1)
     if pix_size == 0:
         xy = xy_in
     else:
-        xy = np.concatenate((np.array([i for i in range(1, n_ps + 1)]).reshape(-1, 1),
-                             ((nz_j - 0.5) * pix_size).reshape(-1, 1), ((nz_i - 0.5) * pix_size).reshape(-1, 1)),
-                            axis=1)
-        xy = xy.astype('int')
+        xy = np.concatenate(((np.array([i for i in range(1, n_ps + 1)])).reshape(-1, 1), (nz_j - 0.5) * pix_size,
+                             (nz_i - 0.5) * pix_size), axis=1).astype('int')
 
-        print()
+    ij = np.concatenate((nz_i, nz_j), axis=1)
+
+    uw_grid = {
+        'ph': ph,
+        'ph_in': ph_in,
+        'ph_lowpass': ph_lowpass,
+        'ph_uw_predef': ph_uw_predef,
+        'ph_in_predef': ph_in_predef,
+        'xy': xy,
+        'ij': ij,
+        'nzix': nzix,
+        'grid_x_min': grid_x_min,
+        'grid_y_min': grid_y_min,
+        'n_i': n_i,
+        'n_j': n_j,
+        'n_ifg': n_ifg,
+        'n_ps': n_ps,
+        'grid_ij': grid_ij,
+        'pix_size': pix_size
+    }
+    savemat('uw_grid.mat', uw_grid)
+    uw_grid.clear()
