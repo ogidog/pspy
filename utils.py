@@ -16,8 +16,14 @@ def compare_objects(obj, obj_name):
         diff = obj_by_matlab - obj_by_py
 
         if ('complex' in str(diff.dtype)):
-            print(np.max(np.abs(diff)))
+            max_error = np.max(np.abs(diff))
+            print('Max error: {}'.format(max_error))
         else:
-            print(np.max(diff))
+            max_error = np.max(diff)
+            print('Max error: {}'.format(max_error))
 
-    return True
+        diff_pos = np.array(np.where(diff != 0))
+        print('Diff position:\n {}'.format(diff_pos))
+
+    diff = {'diff': diff, 'max_error': max_error, 'diff_pos': diff_pos}
+    return diff
