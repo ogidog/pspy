@@ -126,7 +126,21 @@ def uw_interp():
     Z = np.reshape(Z, (nrow, ncol), 'F')
 
     Zvec = np.ndarray.flatten(Z, 'F').reshape(-1, 1)
+    grid_edges = np.concatenate((Zvec[0:len(Zvec) - nrow, 0].reshape(-1, 1), Zvec[nrow:, 0].reshape(-1, 1)), axis=1)
+    Zvec = np.ndarray.flatten(Z.reshape(-1, 1), 'F').reshape(-1, 1)
+    grid_edges = np.concatenate((grid_edges, np.concatenate(
+        (Zvec[0:len(Zvec) - ncol, 0].reshape(-1, 1), Zvec[ncol:, 0].reshape(-1, 1)), axis=1)), axis=0)
+    sort_edges = np.sort(grid_edges, axis=1)
+    I_sort = np.argsort(grid_edges)
+    edge_sign = I_sort[:, 1] - I_sort[:, 0]
+    edge_sign = edge_sign.reshape(-1, 1)
+    alledges, I, J = np.unique(sort_edges, return_index=True, return_inverse=True, axis=0)
+    I = I.reshape(-1, 1)
+    J = J.reshape(-1, 1)
+    sameix = np.array([alledges[:, 0] == alledges[:, 1]]).reshape(-1, 1)
+    alledges[sameix, :] = 0
+
     # TODO: убрать
-    # diff = compare_objects(Zvec, 'Zvec')
+    # diff = compare_objects(edge_sign, 'edge_sign')
 
     print()
