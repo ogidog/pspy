@@ -138,8 +138,11 @@ def uw_interp():
     I = I.reshape(-1, 1)
     J = J.reshape(-1, 1)
     sameix = np.array([alledges[:, 0] == alledges[:, 1]]).reshape(-1, 1)
-    alledges[sameix, :] = 0
+    for i in range(len(sameix)):
+        if sameix[i] == True:
+            alledges[i] = 0
 
+    [edgs,I2,J2]=unique(alledges,'rows');
     # TODO: убрать
     # diff = compare_objects(edge_sign, 'edge_sign')
 
