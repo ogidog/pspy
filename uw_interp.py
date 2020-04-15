@@ -142,8 +142,14 @@ def uw_interp():
         if sameix[i] == True:
             alledges[i] = 0
 
-    [edgs,I2,J2]=unique(alledges,'rows');
+    edgs, I2, J2 = np.unique(alledges, return_index=True, return_inverse=True, axis=0)
+    I2 = I2.reshape(-1, 1)
+    J2 = J2.reshape(-1, 1)
+    n_edge = edgs.shape[0] - 1
+    edgs = np.concatenate((np.array([i for i in range(1, n_edge + 1)]).reshape(-1, 1), edgs[1:, :]), axis=1)
+    gridedgeix = np.multiply(J2[np.ndarray.flatten(J)], edge_sign)
+
     # TODO: убрать
-    # diff = compare_objects(edge_sign, 'edge_sign')
+    # diff = compare_objects(edgs, 'edgs')
 
     print()
