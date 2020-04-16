@@ -3,6 +3,7 @@ import numpy as np
 
 from uw_grid_wrapped import uw_grid_wrapped
 from uw_interp import uw_interp
+from uw_sb_unwrap_space_time import uw_sb_unwrap_space_time
 
 
 def uw_3d(*args):
@@ -105,10 +106,15 @@ def uw_3d(*args):
 
     # TODO: uncomment
     # uw_grid_wrapped(ph, xy, options['grid_size'], options['prefilt_win'], options['goldfilt_flag'],
-    #                options['lowfilt_flag'],
-    #                options['gold_alpha'], options['ph_uw_predef'])
+    #               options['lowfilt_flag'],
+    #               options['gold_alpha'], options['ph_uw_predef'])
 
-    ph = []
-    uw_interp()
+    # TODO: uncomment
+    # ph = []
+    # uw_interp()
+
+    uw_sb_unwrap_space_time(day, ifgday_ix, options['unwrap_method'], options['time_win'], options['la_flag'], bperp,
+                            options['n_trial_wraps'], options['prefilt_win'], options['scf_flag'], options['temp'],
+                            options['n_temp_wraps'], options['max_bperp_for_temp_est'])
 
     return np.array(['ph_uw', 'msd'])
