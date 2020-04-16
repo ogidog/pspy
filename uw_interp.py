@@ -148,8 +148,16 @@ def uw_interp():
     n_edge = edgs.shape[0] - 1
     edgs = np.concatenate((np.array([i for i in range(1, n_edge + 1)]).reshape(-1, 1), edgs[1:, :]), axis=1)
     gridedgeix = np.multiply(J2[np.ndarray.flatten(J)], edge_sign)
+    colix = np.reshape(gridedgeix[0: nrow * (ncol - 1)], (nrow, ncol - 1), 'F')
+    rowix = np.reshape(gridedgeix[nrow * (ncol - 1):], (ncol, nrow - 1), 'F').T
 
-    # TODO: убрать
-    # diff = compare_objects(edgs, 'edgs')
+    print('   Number of unique edges in grid: {}\n'.format(n_edge))
 
-    print()
+    uw_interp = {
+        'edgs': edgs,
+        'n_edge': n_edge,
+        'rowix': rowix,
+        'colix': colix,
+        'Z': Z
+    }
+    savemat('uw_interp.mat', uw_interp)
