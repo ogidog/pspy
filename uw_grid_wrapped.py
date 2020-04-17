@@ -6,6 +6,7 @@ from scipy.io import savemat
 
 from utils import not_supported_param, compare_objects
 from wrap_filt import wrap_filt
+from utils import *
 
 
 def uw_grid_wrapped(*args):
