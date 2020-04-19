@@ -173,13 +173,24 @@ def uw_sb_unwrap_space_time(day, ifgday_ix, unwrap_method, time_win, la_flag, bp
                 dph_sub = dph_sub / np.abs(dph_sub)
 
             else:
-                dph_sub=dph_space
-                bperp_sub=bperp
-                bperp_range_sub=bperp_range
+                dph_sub = dph_space
+                bperp_sub = bperp
+                bperp_range_sub = bperp_range
 
-        trial_mult=[-ceil(8*n_trial_wraps):ceil(8*n_trial_wraps)];
+        trial_mult = np.array([i for i in range(int(-np.ceil(8 * n_trial_wraps)), int(np.ceil(8 * n_trial_wraps) + 1))])
+        n_trials = len(trial_mult)
+        trial_phase = bperp_sub / bperp_range_sub * np.pi / 4
+        trial_phase_mat = np.exp(complex(0, -1) * trial_phase * trial_mult)
+        K = np.zeros((ui['n_edge'][0][0], 1))
+        coh = np.zeros((ui['n_edge'][0][0], 1))
 
-        # TODO: убрать
-        #diff = compare_complex_objects(dph_sub, 'dph_sub')
+        for i in range(0, ui['n_edge'][0][0]):
+            cpxphase = dph_sub[i, :].reshape(-1, 1)
+            cpxphase_mat = np.tile(cpxphase, (1, n_trials))
+            phaser = np.multiply(trial_phase_mat, cpxphase_mat)
+            phaser_sum = sum(phaser)
 
-        print()
+            # TODO: убрать
+            # diff = compare_complex_objects(phaser, 'phaser')
+
+            print()
