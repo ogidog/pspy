@@ -14,8 +14,9 @@ def compare_objects(obj, obj_name):
 
     diff = obj_matlab - obj_py
     max_error = np.max(diff)
+    min_error = np.min(diff)
     diff_pos = np.array(np.where(diff != 0))
-    diff = {'diff': diff, 'max_error': max_error, 'diff_pos': diff_pos}
+    diff = {'diff': diff, 'max_error': max_error, 'diff_pos': diff_pos, 'min_error': min_error}
 
     return diff
 
@@ -26,13 +27,20 @@ def compare_complex_objects(obj, obj_name):
 
     diffs = []
     max_error = np.complex(-999999999, -9999999999)
+    min_error = np.complex(999999999, 9999999999)
     for i in range(len(obj_matlab)):
         diffs.append(obj_matlab[i] - obj_py[i])
         if np.max(diffs[i]) > max_error:
             max_error = np.max(diffs[i])
             max_diff_pos = i
 
-    diff = {'diff': diffs, 'max_error': max_error, 'max_diff_pos': max_diff_pos}
+        if np.min(diffs[i]) < min_error:
+            min_error = np.min(diffs[i])
+            min_diff_pos = i
+
+    diff = {'diff': diffs, 'max_error': max_error, 'max_diff_pos': max_diff_pos, 'min_error': min_error,
+            'min_diff_pos': min_diff_pos}
+
     return diff
 
 

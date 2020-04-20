@@ -1,6 +1,8 @@
 import numpy as np
 
 from scipy.io import loadmat, savemat
+from scipy.sparse import csr_matrix
+
 from utils import *
 
 
@@ -189,8 +191,89 @@ def uw_sb_unwrap_space_time(day, ifgday_ix, unwrap_method, time_win, la_flag, bp
             cpxphase_mat = np.tile(cpxphase, (1, n_trials))
             phaser = np.multiply(trial_phase_mat, cpxphase_mat)
             phaser_sum = sum(phaser)
+            coh_trial = abs(phaser_sum) / sum(abs(cpxphase))
+            coh_max = np.max(coh_trial)
+            coh_max_ix = np.argmax(coh_trial)
+            falling_ix = np.where(np.diff(coh_trial[0:coh_max_ix]) < 0)[0]
+            if len(falling_ix) > 0:
+                peak_start_ix = falling_ix[len(falling_ix) - 1] + 1
+            else:
+                peak_start_ix = 0
+            rising_ix = np.where(np.diff(coh_trial[coh_max_ix:]) > 0)[0]
+            if len(rising_ix) > 0:
+                peak_end_ix = rising_ix[0] + coh_max_ix - 1
+            else:
+                peak_end_ix = n_trials
+            coh_trial[peak_start_ix:peak_end_ix] = 0
 
-            # TODO: убрать
-            # diff = compare_complex_objects(phaser, 'phaser')
+            if coh_max - np.max(coh_trial) > 0.1:
+                K0 = np.pi / 4 / bperp_range_sub * trial_mult[coh_max_ix]
+                resphase = np.multiply(cpxphase, np.exp(np.multiply(complex(0, -1), (np.multiply(K0, bperp_sub)))))
+                offset_phase = np.sum(resphase)
+                resphase = np.angle(np.multiply(resphase, np.conj(offset_phase)))
+                weighting = np.abs(cpxphase)
+                A = np.multiply(weighting, bperp_sub)
+                b = np.multiply(weighting, resphase)
+                mopt = np.linalg.lstsq(A, b, rcond=-1)[0]
+                K[i] = K0 + mopt
+                phase_residual = np.multiply(cpxphase, np.exp(complex(0, -1) * (K[i] * bperp_sub)))
+                mean_phase_residual = np.sum(phase_residual)
+                coh[i] = np.abs(mean_phase_residual) / np.sum(abs(phase_residual))
 
-            print()
+        cpxphase_mat = []
+        trial_phase_mat = []
+        phaser = []
+        dph_sub = []
+
+        K[coh < 0.31] = 0
+        if temp_flag == 'y':
+            not_supported_param('temp_flag', 'y')
+            # dph_space(K==0,:)=dph_space(K==0,:).*exp(1i*Kt(K==0)*temp')
+            # Kt(K==0)=0;
+            # K(Kt==0)=0;
+
+        dph_space = np.multiply(dph_space, np.exp(complex(0, -1) * K * bperp.flatten()))
+        if predef_flag == 'y':
+            not_supported_param(predef_flag, 'y')
+            # dph_scla=K*bperp';
+            # dph_space_uw=dph_space_uw-dph_scla(predef_ix);
+            # clear dph_scla
+
+    spread = csr_matrix((ui['n_edge'][0][0], n_ifg), dtype=np.int).toarray()
+
+    if unwrap_method == '2D':
+        not_supported_param('unwrap_method', '2D')
+        # dph_space_uw=angle(dph_space);
+        # if strcmpi(la_flag,'y')
+        #    dph_space_uw=dph_space_uw+K*bperp';   % equal to dph_space + integer cycles
+        # end
+        # if strcmpi(temp_flag,'y')
+        #    dph_space_uw=dph_space_uw+Kt*temp';   % equal to dph_space + integer cycles
+        # end
+        # dph_noise=[];
+        # save('uw_space_time','dph_space_uw','spread','dph_noise');
+    else:
+        if unwrap_method == '3D_NO_DEF':
+            not_supported_param('unwrap_method', '2D')
+            # dph_noise=angle(dph_space);
+            # dph_space_uw=angle(dph_space);
+            # if strcmpi(la_flag,'y')
+            #    dph_space_uw=dph_space_uw+K*bperp';   % equal to dph_space + integer cycles
+            # end
+            # if strcmpi(temp_flag,'y')
+            #    dph_space_uw=dph_space_uw+Kt*temp';   % equal to dph_space + integer cycles
+            # end
+            # save('uw_space_time','dph_space_uw','dph_noise','spread');
+        else:
+            print('   Smoothing in time\n')
+
+            if unwrap_method == '3D_FULL':
+                dph_smooth_ifg = np.empty((len(dph_space), len(dph_space[0])))
+                dph_smooth_ifg[:] = np.nan
+                for i in range(0, n_image):
+                    ix = G[:, i] != 0
+
+                    # TODO: убрать
+                    # diff = compare_objects(spread, 'spread')
+
+                    print()
