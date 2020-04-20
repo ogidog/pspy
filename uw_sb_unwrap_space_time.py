@@ -1,3 +1,4 @@
+import ggf
 import numpy as np
 
 from scipy.io import loadmat, savemat
@@ -133,7 +134,7 @@ def uw_sb_unwrap_space_time(day, ifgday_ix, unwrap_method, time_win, la_flag, bp
     # end
 
     if la_flag == 'y':
-        print('   Estimating look angle error )\n')
+        print('   Estimating look angle error \n')
 
         bperp_range = (max(bperp) - min(bperp))[0]
         ix = np.where(np.abs(np.diff(ifgday_ix, 1, 1)) == 1)[0]
@@ -272,8 +273,40 @@ def uw_sb_unwrap_space_time(day, ifgday_ix, unwrap_method, time_win, la_flag, bp
                 dph_smooth_ifg[:] = np.nan
                 for i in range(0, n_image):
                     ix = G[:, i] != 0
+                    if sum(ix) >= n_image - 2:
+                        gsub = G[ix, i]
+                        dph_sub = dph_space[:, ix]
+                        sign_ix = np.tile(-np.sign(np.transpose(gsub)), (ui['n_edge'][0][0], 1))
+                        dph_sub[sign_ix == -1] = np.conj(dph_sub[sign_ix == -1])
+                        slave_ix = np.sum(ifgday_ix[ix, :], axis=1) - i
+                        day_sub = day[slave_ix]
+                        day_sub = np.sort(day_sub)
+                        sort_ix = np.argsort(day_sub, axis=None)
+                        dph_sub = dph_sub[:, sort_ix]
+                        dph_sub_angle = np.angle(dph_sub)
+                        n_sub = len(day_sub)
+                        dph_smooth = np.zeros((ui['n_edge'][0][0], n_sub))
+                        dph_smooth = dph_smooth.astype(np.complex)
+                        for i1 in range(0, n_sub):
+                            time_diff = (day_sub[i1] - day_sub).flatten()
+                            weight_factor = np.exp(-np.power(time_diff, 2) / 2 / np.power(time_win, 2))
+                            weight_factor = weight_factor / sum(weight_factor)
+                            dph_mean = np.sum(np.multiply(dph_sub, np.tile(weight_factor, (ui['n_edge'][0][0], 1))),
+                                              axis=1).reshape(-1, 1)
+                            dph_mean_adj = np.mod(dph_sub_angle - np.tile(np.angle(dph_mean), (1, n_sub)) + np.pi,
+                                                  2 * np.pi) - np.pi
+                            GG = np.concatenate((np.ones((n_sub, 1)), time_diff.reshape(-1, 1)), axis=1)
+                            if len(GG) > 1:
+                                m = ggf.matlab_funcs.lscov(GG, np.transpose(dph_mean_adj), w=weight_factor).reshape(
+                                    len(GG[0]), len(dph_mean_adj))
+                            else:
+                                m = np.zeros((len(GG), ui['n_edge'][0][0]))
+                            dph_smooth[:, i1] = np.multiply(dph_mean,
+                                                            np.exp(complex(0, 1) * (m[0, :].reshape(-1, 1)))).flatten()
 
-                    # TODO: убрать
-                    # diff = compare_objects(spread, 'spread')
+                        dph_smooth_sub = np.cumsum(np.concatenate((np.angle(dph_smooth[:, 0]).reshape(-1,1), np.angle(np.multiply(dph_smooth[:, 1:], np.conj(dph_smooth[:, 0:len(dph_smooth[0]) - 1])))),axis=1), 1)
 
-                    print()
+                        # TODO: убрать
+                        # diff = compare_complex_objects(dph_smooth, 'dph_smooth')
+                        diff = compare_objects(dph_smooth_sub, 'dph_smooth_sub')
+                        print("fff")
