@@ -13,8 +13,8 @@ def compare_objects(obj, obj_name):
     obj_py = obj
 
     diff = obj_matlab - obj_py
-    max_error = np.max(diff)
-    min_error = np.min(diff)
+    max_error = np.max(diff) #np.max(diff[np.where(np.isnan(diff)!=True)])
+    min_error = np.min(diff) #np.min(diff[np.where(np.isnan(diff)!=True)])
     diff_pos = np.array(np.where(diff != 0))
     diff = {'diff': diff, 'max_error': max_error, 'diff_pos': diff_pos, 'min_error': min_error}
 

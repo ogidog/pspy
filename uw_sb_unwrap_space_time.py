@@ -304,9 +304,116 @@ def uw_sb_unwrap_space_time(day, ifgday_ix, unwrap_method, time_win, la_flag, bp
                             dph_smooth[:, i1] = np.multiply(dph_mean,
                                                             np.exp(complex(0, 1) * (m[0, :].reshape(-1, 1)))).flatten()
 
-                        dph_smooth_sub = np.cumsum(np.concatenate((np.angle(dph_smooth[:, 0]).reshape(-1,1), np.angle(np.multiply(dph_smooth[:, 1:], np.conj(dph_smooth[:, 0:len(dph_smooth[0]) - 1])))),axis=1), 1)
+                        dph_smooth_sub = np.cumsum(np.concatenate((np.angle(dph_smooth[:, 0]).reshape(-1, 1), np.angle(
+                            np.multiply(dph_smooth[:, 1:], np.conj(dph_smooth[:, 0:len(dph_smooth[0]) - 1])))), axis=1),
+                                                   1)
+                        close_master_ix = np.where(slave_ix - i > 0)[0]
+                        if len(close_master_ix) == 0:
+                            close_master_ix = n_sub
+                        else:
+                            close_master_ix = close_master_ix[0]
+                            if close_master_ix > 1:
+                                close_master_ix = np.concatenate(
+                                    (np.array([close_master_ix - 1]), np.array([close_master_ix])), axis=0)
 
-                        # TODO: убрать
-                        # diff = compare_complex_objects(dph_smooth, 'dph_smooth')
-                        diff = compare_objects(dph_smooth_sub, 'dph_smooth_sub')
-                        print("fff")
+                        dph_close_master = np.mean(dph_smooth_sub[:, close_master_ix], axis=1).reshape(-1, 1)
+                        dph_smooth_sub = dph_smooth_sub - np.tile(
+                            dph_close_master - np.angle(np.exp(complex(0, 1) * dph_close_master)), (1, n_sub))
+                        dph_smooth_sub = np.multiply(dph_smooth_sub, sign_ix)
+                        already_sub_ix = np.where(np.isnan(dph_smooth_ifg[0, ix]) != True)[0]
+                        ix = np.where(ix)[0]
+                        already_ix = ix[already_sub_ix]
+                        std_noise1 = np.std(
+                            np.angle(np.multiply(dph_space[:, already_ix],
+                                                 np.exp(complex(0, -1) * dph_smooth_ifg[:, already_ix]))))
+                        std_noise1 = [] if np.any(np.isnan(std_noise1)) else std_noise1
+                        std_noise2 = np.std(np.angle(np.multiply(dph_space[:, already_ix], np.exp(
+                            complex(0, -1) * dph_smooth_sub[:, already_sub_ix]))))
+                        std_noise2 = [] if np.any(np.isnan(std_noise2)) else std_noise2
+                        keep_ix = np.ones(n_sub, dtype=bool)
+                        keep_ix[already_sub_ix[std_noise1 < std_noise2]] = False
+                        dph_smooth_ifg[:, ix[keep_ix]] = dph_smooth_sub[:, keep_ix]
+
+                dph_noise = np.angle(np.multiply(dph_space, np.exp(complex(0, -1) * dph_smooth_ifg)))
+                std_dph_noise = np.array([np.std(dph_noise[i], ddof=1) for i in range(len(dph_noise))])
+                dph_noise[std_dph_noise > 1.2, :] = float('nan')
+
+            else:
+                not_supported_param('unwrap_method', 'unwrap_method')
+
+                # x=(day-day(1))*(n-1)/(day(end)-day(1)); % use dates for smoothing
+                # if predef_flag=='y'
+                #    n_dph=size(dph_space,1);
+                #    dph_space_angle=double(angle(dph_space));
+                #    dph_space_angle(predef_ix)=dph_space_uw;
+                #    dph_space_series=zeros(n,n_dph);
+                #    for i=1:n_dph
+                #        W=predef_ix(i,:)+0.01; % give more weight to the predfined unwrapped
+                #        dph_space_series(2:end,i)=lscov(double(G(:,2:end)),dph_space_angle(i,:)',W);
+                #    end
+                # else
+                #    dph_space_series=[zeros(1,ui.n_edge);double(G(:,2:end))\double(angle(dph_space))'];
+                # end
+
+                # dph_smooth_series=zeros(size(G,2),ui.n_edge,'single');
+
+                # for i1=1:n
+                #    time_diff_sq=(day(i1)-day).^2;
+                #    weight_factor=exp(-time_diff_sq/2/time_win^2);
+                #    weight_factor=weight_factor/sum(weight_factor);
+                #    dph_smooth_series(i1,:)=sum(dph_space_series.*repmat(weight_factor,1,ui.n_edge));
+                # end
+
+                # dph_smooth_ifg=(G*dph_smooth_series)';
+                # dph_noise=angle(dph_space.*exp(-1i*dph_smooth_ifg));
+
+                # if strcmpi(unwrap_method,'3D_SMALL_DEF')|...
+                #    strcmpi(unwrap_method,'3D_QUICK')
+                #    not_small_ix=find(std(dph_noise,0,2)>1.3)';
+                #    fprintf('   %d edges with high std dev in time (elapsed time=%ds)\n',length(not_small_ix),round(toc))
+                #    dph_noise(not_small_ix,:)=nan;
+                # else % 3D
+                #    uw=load('uw_grid');
+                #    ph_noise=angle(uw.ph.*conj(uw.ph_lowpass));
+                #    clear uw
+                #    dph_noise_sf=((ph_noise(ui.edgs(:,3),:)-(ph_noise(ui.edgs(:,2),:))));
+                #    m_minmax=repmat([-pi,pi],5,1).*repmat([0.5;0.25;1;0.25;1],1,2);
+                #    anneal_opts=[1;15;0;0;0;0;0];
+                #    covm=cov((dph_noise_sf)); % estimate of covariance
+                #    [W,P]=chol(inv(covm)); % weighting matrix
+                #    if P~=0
+                #        W=diag(1./sqrt(diag(covm)));
+                #    end
+                #    not_small_ix=find(std(dph_noise,0,2)>1)';
+                #    fprintf('   Performing complex smoothing on %d edges (elapsed time=%ds)\n',length(not_small_ix),round(toc))
+
+                #    n_proc=0;
+                #    for i=not_small_ix
+                #        dph=angle(dph_space(i,:))';
+                #        dph_smooth_series(:,i)=uw_sb_smooth_unwrap(m_minmax,anneal_opts,G,W,dph,x);
+
+                #        n_proc=n_proc+1;
+                #        if round(n_proc/1000)==n_proc/1000
+                #            save('uw_unwrap_time','G','dph_space','dph_smooth_series');
+                #            fprintf('%d edges of %d reprocessed (elapsed time=%ds)\n',n_proc,length(not_small_ix),round(toc))
+                #        end
+                #    end
+                #    dph_smooth_ifg=(G*dph_smooth_series)';
+                #    dph_noise=angle(dph_space.*exp(-1i*dph_smooth_ifg));
+                # end
+
+            dph_space = []
+            dph_space_uw = dph_smooth_ifg + dph_noise
+            dph_smooth_ifg = []
+
+            if la_flag == 'y':
+                dph_space_uw = dph_space_uw + (K * bperp.flatten())
+
+            if temp_flag == 'y':
+                not_supported_param('temp_flag', 'y')
+                # dph_space_uw=dph_space_uw+Kt*temp';   % equal to dph_space + integer cycles
+
+            # TODO: убрать
+            # diff = compare_complex_objects(dph_smooth, 'dph_smooth')
+            diff = compare_objects(dph_space_uw, 'dph_space_uw')
+            print("fff")
