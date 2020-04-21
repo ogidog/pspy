@@ -12,9 +12,12 @@ def compare_objects(obj, obj_name):
     obj_matlab = loadmat('F:\\Temp\\' + obj_name + '.mat')[obj_name]
     obj_py = obj
 
+    obj_matlab[np.isnan(obj_matlab)] = 9999999
+    obj_py[np.isnan(obj_py)] = 9999999
+
     diff = obj_matlab - obj_py
-    max_error = np.max(diff) #np.max(diff[np.where(np.isnan(diff)!=True)])
-    min_error = np.min(diff) #np.min(diff[np.where(np.isnan(diff)!=True)])
+    max_error = np.max(diff)
+    min_error = np.min(diff)
     diff_pos = np.array(np.where(diff != 0))
     diff = {'diff': diff, 'max_error': max_error, 'diff_pos': diff_pos, 'min_error': min_error}
 

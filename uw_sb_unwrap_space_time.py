@@ -1,3 +1,7 @@
+import warnings
+
+warnings.filterwarnings("ignore")
+
 import ggf
 import numpy as np
 
@@ -406,6 +410,11 @@ def uw_sb_unwrap_space_time(day, ifgday_ix, unwrap_method, time_win, la_flag, bp
             dph_space_uw = dph_smooth_ifg + dph_noise
             dph_smooth_ifg = []
 
+            # TODO: убрать
+            # diff = compare_complex_objects(dph_smooth, 'dph_smooth')
+            # diff = compare_objects(dph_space_uw, 'dph_space_uw')
+            # print("fff")
+
             if la_flag == 'y':
                 dph_space_uw = dph_space_uw + (K * bperp.flatten())
 
@@ -413,7 +422,64 @@ def uw_sb_unwrap_space_time(day, ifgday_ix, unwrap_method, time_win, la_flag, bp
                 not_supported_param('temp_flag', 'y')
                 # dph_space_uw=dph_space_uw+Kt*temp';   % equal to dph_space + integer cycles
 
-            # TODO: убрать
-            # diff = compare_complex_objects(dph_smooth, 'dph_smooth')
-            diff = compare_objects(dph_space_uw, 'dph_space_uw')
-            print("fff")
+            if scf_flag == 'y':
+                not_supported_param('scf_flag', 'y')
+                # fprintf('   Calculating local phase gradients (elapsed time=%ds)\n',round(toc))
+                # ifreq_ij=nan(n_ps,n_ifg,'single');
+                # jfreq_ij=nan(n_ps,n_ifg,'single');
+                # ifgw=zeros(nrow,ncol);
+                # uw=load('uw_grid');
+                # for i=1:n_ifg
+                #    ifgw(nzix)=uw.ph(:,i);
+                #    [ifreq,jfreq,grad_ij,Hmag]=gradient_filt(ifgw,prefilt_win);
+                #    ix=~isnan(ifreq)&Hmag./((abs(ifreq))+1)>3;
+                #    if sum(ix(:))>2
+                #        ifreq_ij(:,i)=griddata(grad_ij(ix,2),grad_ij(ix,1),ifreq(ix),ij(:,2),ij(:,1),'linear');
+                #    end
+                #    ix=~isnan(jfreq)&Hmag./((abs(jfreq))+1)>3;
+                #    if sum(ix(:))>2
+                #        jfreq_ij(:,i)=griddata(grad_ij(ix,2),grad_ij(ix,1),jfreq(ix),ij(:,2),ij(:,1),'linear');
+                #    end
+                # end
+                # clear uw
+
+                # spread2=zeros(size(spread),'single');
+                # dph_smooth_uw2=nan(ui.n_edge,n_ifg,'single');
+
+                # fprintf('   Smoothing using local phase gradients (elapsed time=%ds)\n',round(toc))
+                # for i=1:ui.n_edge
+                #    nodes_ix=ui.edgs(i,[2:3]);
+                #    ifreq_edge=mean(ifreq_ij(nodes_ix,:));
+                #    jfreq_edge=mean(jfreq_ij(nodes_ix,:));
+                #    diff_i=diff(ij(nodes_ix,1));
+                #    diff_j=diff(ij(nodes_ix,2));
+                #    dph_smooth_uw2(i,:)=diff_i*ifreq_edge+diff_j*jfreq_edge;
+                #    %spread2(i,:)=diff_i*diff(ifreq_ij(nodes_ix,:))+diff_j*diff(jfreq_ij(nodes_ix,:));
+                #    spread2(i,:)=diff(ifreq_ij(nodes_ix,:))+diff(jfreq_ij(nodes_ix,:));
+                # end
+                # fprintf('   Choosing between time and phase gradient smoothing (elapsed time=%ds)\n',round(toc))
+                # std_noise=std(dph_noise,0,2);
+                # dph_noise2=angle(exp(j*(dph_space_uw-dph_smooth_uw2)));
+                # std_noise2=std(dph_noise2,0,2);
+                # dph_noise2(std_noise2>1.3,:)=nan;
+                # shaky_ix=isnan(std_noise) | std_noise>std_noise2; % spatial smoothing works better index
+
+                # fprintf('   %d arcs smoothed in time, %d in space (elapsed time=%ds)\n',ui.n_edge-sum(shaky_ix),sum(shaky_ix),round(toc))
+
+                # dph_noise(shaky_ix,:)=dph_noise2(shaky_ix,:);
+                # dph_space_uw(shaky_ix,:)=dph_smooth_uw2(shaky_ix,:)+dph_noise2(shaky_ix,:);
+                # spread(shaky_ix,:)=spread2(shaky_ix,:);
+            else:
+                shaky_ix = []
+
+            uw_space_time = {
+                'dph_space_uw': dph_space_uw,
+                'dph_noise': dph_noise,
+                'G': G,
+                'spread': spread,
+                'ifreq_ij': ifreq_ij,
+                'jfreq_ij': jfreq_ij,
+                'shaky_ix': shaky_ix,
+                'predef_ix': predef_ix
+            }
+            savemat('uw_space_time.mat', uw_space_time)
