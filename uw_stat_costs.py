@@ -44,6 +44,33 @@ def uw_stat_costs(*args):
     Z = ui['Z']
 
     grid_edges = np.concatenate((colix.T[(np.abs(colix) > 0).T], rowix.T[(np.abs(rowix) > 0).T]), axis=0).reshape(-1, 1)
+    n_edges = np.histogram(np.abs(grid_edges), np.array(range(ui['n_edge'][0][0] + 1)) + 1)[0].reshape(-1, 1)
 
+    unwrap_method = args[0]
+    if unwrap_method == '2D':
+        not_supported_param('unwrap_method', '2D')
+        # edge_length=sqrt(diff(x(ui.edgs(:,2:3)),[],2).^2+diff(y(ui.edgs(:,2:3)),[],2).^2);
+        # %sigsq_noise=ones(ui.n_edge,1);
+        # if uw.pix_size==0
+        #    pix_size=5;  % if we don't know resolution
+        # else
+        #    pix_size=uw.pix_size;
+        # end
+        # if isempty(variance)
+        #    sigsq_noise=zeros(size(edge_length));
+        # else
+        #    sigsq_noise=variance(ui.edgs(:,2))+variance(ui.edgs(:,3));
+        # end
+        # sigsq_aps=(2*pi)^2; % fixed for now as one fringe
+        # aps_range=20000; % fixed for now as 20 km
+        # sigsq_noise=sigsq_noise+sigsq_aps*(1-exp(-edge_length*pix_size*3/aps_range)); % cov of dph=C11+C22-2*C12 (assume APS only contributor)
+        # sigsq_noise=sigsq_noise/10; % scale it to keep in reasonable range
+        # dph_smooth=ut.dph_space_uw;
+    else:
+        sigsq_noise = np.power((np.std(ut['dph_noise'], ddof=1, axis=1) / 2 / np.pi), 2).reshape(-1, 1)
+        # sigsq_defo = (std(ut.dph_space_uw - ut.dph_noise, 0, 2) / 2 / pi). ^ 2;
+        dph_smooth = ut['dph_space_uw'] - ut['dph_noise']
+    del ut['dph_noise']
 
+    diff = compare_objects(sigsq_noise, 'sigsq_noise')
     print()
