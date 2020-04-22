@@ -43,4 +43,7 @@ def uw_stat_costs(*args):
     rowix = ui['rowix']
     Z = ui['Z']
 
+    grid_edges = np.concatenate((colix.T[(np.abs(colix) > 0).T], rowix.T[(np.abs(rowix) > 0).T]), axis=0).reshape(-1, 1)
+
+
     print()
