@@ -28,44 +28,39 @@ def compare_complex_objects(obj, obj_name):
     obj_matlab = loadmat('F:\\Temp\\' + obj_name + '.mat')[obj_name]
     obj_py = obj
 
-    diffs = []
-    max_error = np.complex(-999999999, -9999999999)
-    min_error = np.complex(999999999, 9999999999)
-    for i in range(len(obj_matlab)):
-        diffs.append(obj_matlab[i] - obj_py[i])
-        if np.max(diffs[i]) > max_error:
-            max_error = np.max(diffs[i])
-            max_diff_pos = i
+    diff = obj_matlab - obj_py
+    max_error = np.max(diff)
+    min_error = np.min(diff)
+    diff_pos = np.array(np.where(diff != complex(0, 0)))
 
-        if np.min(diffs[i]) < min_error:
-            min_error = np.min(diffs[i])
-            min_diff_pos = i
-
-    diff = {'diff': diffs, 'max_error': max_error, 'max_diff_pos': max_diff_pos, 'min_error': min_error,
-            'min_diff_pos': min_diff_pos}
+    diff = {'diff': diff, 'max_error': max_error, 'diff_pos': diff_pos, 'min_error': min_error}
 
     return diff
 
 
-def compare_mat_file(file_name):
+def compare_mat_file(file_name, *excluded_keys):
     mat_matlab = loadmat('F:\\Temp\\' + file_name)
     mat_py = loadmat(file_name)
 
     keys_matlab = mat_matlab.keys()
 
     diffs = {}
+
     for key in keys_matlab:
         if '__' not in key:
-            if 'str' not in str(type(mat_py[key])):
-                diff = mat_py[key] - mat_matlab[key]
+            if key not in excluded_keys:
+                obj_py = mat_py[key]
+                obj_matlab = mat_matlab[key]
+                obj_matlab[np.isnan(obj_matlab)] = 9999999
+                obj_py[np.isnan(obj_py)] = 9999999
 
-                if ('complex' in str(diff.dtype)):
-                    max_error = np.max(np.abs(diff))
-                else:
+                diff = obj_py - obj_matlab
+                if len(diff) > 0:
                     max_error = np.max(diff)
-
-                diff_pos = np.array(np.where(diff != 0))
-
-                diffs[key] = {'diff': diff, 'max_error': max_error, 'diff_pos': diff_pos}
-
+                    min_error = np.min(diff)
+                    diff = {'diff': diff, 'max_error': max_error, 'min_error': min_error}
+                    diffs[key] = diff
+                else:
+                    diff = {'diff': diff, 'max_error': 0, 'min_error': 0}
+                    diffs[key] = diff
     return diffs
