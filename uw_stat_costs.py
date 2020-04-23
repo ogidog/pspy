@@ -71,6 +71,19 @@ def uw_stat_costs(*args):
         # sigsq_defo = (std(ut.dph_space_uw - ut.dph_noise, 0, 2) / 2 / pi). ^ 2;
         dph_smooth = ut['dph_space_uw'] - ut['dph_noise']
     del ut['dph_noise']
+    nostats_ix = np.where(np.isnan(sigsq_noise))[0]
+    rowix = rowix.astype(float)
+    colix = colix.astype(float)
+    for i in nostats_ix:
+        rowix[abs(rowix) == i + 1] = float('nan')
+        colix[abs(colix) == i + 1] = float('nan')
+    rowix = rowix.astype('int')
+    colix = colix.astype('int')
 
-    diff = compare_objects(sigsq_noise, 'sigsq_noise')
+    sigsq = np.round(np.multiply(((sigsq_noise) * np.power(nshortcycle, 2)) / costscale, n_edges))
+    sigsq[np.isnan(sigsq)] = 0
+
+    sigsq[sigsq < 1] = 1
+
+    diff = compare_objects(sigsq, 'sigsq')
     print()
