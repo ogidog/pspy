@@ -2,6 +2,7 @@ import numpy as np
 
 from scipy.io import loadmat
 from utils import *
+from writecpx import writecpx
 
 
 def uw_stat_costs(*args):
@@ -152,5 +153,8 @@ def uw_stat_costs(*args):
         colcost_int16.tofile(fid)
         fid.close()
 
-        #diff = compare_objects(colcost, 'colcost')
+        ifgw = uw['ph'][Z - 1, i1].reshape(nrow, ncol)
+        writecpx('snaphu.in', ifgw)
+
+        # diff = compare_objects(ifgw, 'ifgw')
         print()
