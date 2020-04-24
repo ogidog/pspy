@@ -128,11 +128,29 @@ def uw_stat_costs(*args):
         colstdgrid.T[nzcolix.T] = sigsqtot[np.abs(colix.T[nzcolix.T]).astype('int') - 1].flatten()
         colcost[:, 1::4] = colstdgrid
 
-#from array import array
-#output_file = open('file', 'wb')
-#float_array = array('d', [3.14, 2.7, 0.0, -1.0, 1.1])
-#float_array.tofile(output_file)
-#output_file.close()
+        offset_cycle = (np.angle(np.exp(complex(0, 1) * ut['dph_space_uw'][:, i1])) - dph_smooth[:, i1]) / 2 / np.pi
+        offset_cycle = offset_cycle.reshape(-1, 1)
+        offgrid = np.zeros(np.shape(rowix))
+        offgrid.T[nzrowix.T] = np.round(np.multiply(offset_cycle[(np.abs(rowix.T[nzrowix.T]) - 1).astype('int')],
+                                                    np.sign(rowix.T[nzrowix.T] - 1).reshape(-1,
+                                                                                            1) * nshortcycle)).flatten()
+        rowcost[:, 0::4] = -offgrid
+        offgrid = np.zeros(np.shape(colix))
+        offgrid.T[nzcolix.T] = np.round(np.multiply(offset_cycle[(np.abs(colix.T[nzcolix.T]) - 1).astype('int')],
+                                                    np.sign(colix.T[nzcolix.T] - 1).reshape(-1,
+                                                                                            1) * nshortcycle)).flatten()
+        colcost[:, 0::4] = offgrid
 
-        diff = compare_objects(colcost, 'colcost')
+        fid = open('snaphu.costinfile', 'wb')
+        rowcost_int16 = rowcost.astype(np.int16)
+        rowcost_int16 = rowcost_int16.T
+        rowcost_int16.tofile(fid)
+        fid.close()
+        fid = open('snaphu.costinfile', 'ab')
+        colcost_int16 = colcost.astype(np.int16)
+        colcost_int16 = colcost_int16.T
+        colcost_int16.tofile(fid)
+        fid.close()
+
+        #diff = compare_objects(colcost, 'colcost')
         print()
