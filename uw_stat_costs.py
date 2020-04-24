@@ -77,13 +77,62 @@ def uw_stat_costs(*args):
     for i in nostats_ix:
         rowix[abs(rowix) == i + 1] = float('nan')
         colix[abs(colix) == i + 1] = float('nan')
-    rowix = rowix.astype('int')
-    colix = colix.astype('int')
 
     sigsq = np.round(np.multiply(((sigsq_noise) * np.power(nshortcycle, 2)) / costscale, n_edges))
     sigsq[np.isnan(sigsq)] = 0
 
     sigsq[sigsq < 1] = 1
 
-    diff = compare_objects(sigsq, 'sigsq')
-    print()
+    rowcost = np.zeros(((nrow - 1), ncol * 4))
+    colcost = np.zeros(((nrow), (ncol - 1) * 4))
+
+    nzrowix = np.abs(rowix) > 0
+    rowstdgrid = np.ones(np.shape(rowix))
+
+    nzcolix = np.abs(colix) > 0
+    colstdgrid = np.ones(np.shape(colix))
+
+    rowcost[:, 2::4] = maxshort
+    colcost[:, 2::4] = maxshort
+
+    stats_ix = ~np.isnan(rowix)
+    rowcost[:, 3::4] = stats_ix.astype('int') * (-1 - maxshort) + 1
+    stats_ix = ~np.isnan(colix)
+    colcost[:, 3::4] = stats_ix.astype('int') * (-1 - maxshort) + 1
+
+    ph_uw = np.zeros((uw['n_ps'][0][0], uw['n_ifg'][0][0]))
+    ifguw = np.zeros((nrow, ncol))
+    msd = np.zeros((uw['n_ifg'][0][0], 1))
+
+    f = open('snaphu.conf', 'w')
+    f.write('INFILE  snaphu.in\n')
+    f.write('OUTFILE snaphu.out\n')
+    f.write('COSTINFILE snaphu.costinfile\n')
+    f.write('STATCOSTMODE  DEFO\n')
+    f.write('INFILEFORMAT  COMPLEX_DATA\n')
+    f.write('OUTFILEFORMAT FLOAT_DATA\n')
+    f.close()
+
+    for i1 in subset_ifg_index:
+        print('   Processing IFG {} of {}'.format(i1 + 1, len(subset_ifg_index)))
+        spread = ut['spread'][:, i1].reshape(-1, 1)
+        spread = np.round(np.multiply(np.abs(spread) * np.power(nshortcycle, 2) / 6 / costscale,
+                                      np.tile(n_edges, (1, len(spread[0])))))
+        sigsqtot = sigsq + spread
+
+        if predef_flag == 'y':
+            not_supported_param('predef_flag', 'y')
+            # sigsqtot(ut.predef_ix(:,i1))=1;
+        rowstdgrid.T[nzrowix.T] = sigsqtot[np.abs(rowix.T[nzrowix.T]).astype('int') - 1].flatten()
+        rowcost[:, 1::4] = rowstdgrid
+        colstdgrid.T[nzcolix.T] = sigsqtot[np.abs(colix.T[nzcolix.T]).astype('int') - 1].flatten()
+        colcost[:, 1::4] = colstdgrid
+
+#from array import array
+#output_file = open('file', 'wb')
+#float_array = array('d', [3.14, 2.7, 0.0, -1.0, 1.1])
+#float_array.tofile(output_file)
+#output_file.close()
+
+        diff = compare_objects(colcost, 'colcost')
+        print()
