@@ -1,4 +1,5 @@
 import numpy as np
+import os
 
 from scipy.io import loadmat
 from utils import *
@@ -142,19 +143,40 @@ def uw_stat_costs(*args):
                                                                                             1) * nshortcycle)).flatten()
         colcost[:, 0::4] = offgrid
 
+        if os.path.exists('snaphu.costinfile'):
+            os.remove('snaphu.costinfile')
+
         fid = open('snaphu.costinfile', 'wb')
-        rowcost_int16 = rowcost.astype(np.int16)
-        rowcost_int16 = rowcost_int16.T
+        rowcost_int16 = rowcost.astype('int16')
+        rowcost_int16 = rowcost_int16
         rowcost_int16.tofile(fid)
-        fid.close()
-        fid = open('snaphu.costinfile', 'ab')
-        colcost_int16 = colcost.astype(np.int16)
-        colcost_int16 = colcost_int16.T
+        colcost_int16 = colcost.astype('int16')
+        colcost_int16 = colcost_int16
         colcost_int16.tofile(fid)
         fid.close()
 
         ifgw = uw['ph'][Z - 1, i1].reshape(nrow, ncol)
         writecpx('snaphu.in', ifgw)
 
-        # diff = compare_objects(ifgw, 'ifgw')
-        print()
+        if os.path.exists('snaphu.log'):
+            os.remove('snaphu.log')
+
+        cmdstr = 'snaphu -d -f snaphu.conf ' + str(ncol) + ' > snaphu.log'
+        os.system(cmdstr)
+
+        fid = open('snaphu.out', 'r')
+        ifguw = np.fromfile(fid, dtype='float32')
+        ifguw = ifguw.reshape(np.shape(ifgw))
+        fid.close()
+        ifg_diff1 = ifguw[0:len(ifguw) - 1, :] - ifguw[1:, :]
+        ifg_diff1 = ifg_diff1.T[(ifg_diff1 != 0).T].reshape(-1, 1)
+        ifg_diff2 = ifguw[:, 0:len(ifguw[0]) - 1] - ifguw[:, 1:]
+        ifg_diff2 = ifg_diff2.T[(ifg_diff2 != 0).T].reshape(-1, 1)
+        msd[i1] = (np.sum(np.power(ifg_diff1, 2)) + np.sum(np.power(ifg_diff2, 2))) / (len(ifg_diff1) + len(ifg_diff2))
+        ph_uw[:, i1] = ifguw.T[uw['nzix'].astype('bool').T]
+
+    uw_phaseuw = {
+        'ph_uw': ph_uw,
+        'msd': msd
+    }
+    savemat('uw_phaseuw.mat', uw_phaseuw)

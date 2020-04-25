@@ -6,6 +6,7 @@ from uw_grid_wrapped import uw_grid_wrapped
 from uw_interp import uw_interp
 from uw_sb_unwrap_space_time import uw_sb_unwrap_space_time
 from uw_stat_costs import uw_stat_costs
+from uw_unwrap_from_grid import uw_unwrap_from_grid
 
 
 def uw_3d(*args):
@@ -120,6 +121,10 @@ def uw_3d(*args):
     # uw_sb_unwrap_space_time(day, ifgday_ix, options['unwrap_method'], options['time_win'], options['la_flag'], bperp,
     #                        options['n_trial_wraps'], options['prefilt_win'], options['scf_flag'], options['temp'],
     #                        options['n_temp_wraps'], options['max_bperp_for_temp_est'])
-    uw_stat_costs(options['unwrap_method'], options['variance'])
 
-    return np.array(['ph_uw', 'msd'])
+    # TODO: uncomment
+    # uw_stat_costs(options['unwrap_method'], options['variance'])
+
+    ph_uw, msd = uw_unwrap_from_grid(xy, options['grid_size'])
+
+    return ph_uw, msd

@@ -5,6 +5,8 @@ from scipy.io import loadmat, savemat
 from getparm import get_parm_value as getparm
 from uw_3d import uw_3d
 
+from utils import compare_objects, not_supported_param
+
 
 def ps_unwrap():
     print('Phase-unwrapping...\n')
@@ -214,7 +216,7 @@ def ps_unwrap():
         sys.exit()
         # options.ph_uw_predef=options.ph_uw_predef(:,unwrap_ifg_index);
 
-    [ph_uw_some, msd_some] = uw_3d(ph_w[:, unwrap_ifg_index], ps['xy'], day, ifgday_ix[unwrap_ifg_index, :],
-                                   ps['bperp'][unwrap_ifg_index], options)
+    ph_uw_some, msd_some = uw_3d(ph_w[:, unwrap_ifg_index], ps['xy'], day, ifgday_ix[unwrap_ifg_index, :],
+                                 ps['bperp'][unwrap_ifg_index], options)
 
     print()
