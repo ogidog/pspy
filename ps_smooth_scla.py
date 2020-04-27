@@ -4,6 +4,7 @@ from triangle import triangulate
 
 from scipy.io import loadmat, savemat
 from getparm import get_parm_value as getparm
+from utils import not_supported_param
 
 
 def ps_smooth_scla(use_small_baselines):
@@ -20,9 +21,7 @@ def ps_smooth_scla(use_small_baselines):
         sclaname = 'scla' + str(psver)
         sclasmoothname = 'scla_smooth' + str(psver)
     else:
-        print("You set the param use_small_baselines={}, but not supported yet.".format(
-            getparm('use_small_baselines')[0][0]))
-        sys.exit(0)
+        not_supported_param('use_small_baselines',getparm('use_small_baselines')[0][0])
         # sclaname=['scla_sb',num2str(psver)];
         # sclasmoothname=['scla_smooth_sb',num2str(psver)];
 
@@ -72,9 +71,7 @@ def ps_smooth_scla(use_small_baselines):
 
     if use_small_baselines == 0:
         if small_baseline_flag == 'y':
-            print("You set the param small_baseline_flag={}, but not supported yet.".format(
-                getparm('small_baseline_flag')[0][0]))
-            sys.exit(0)
+            not_supported_param('small_baseline_flag',getparm('small_baseline_flag')[0][0])
             # bperp_mat=zeros(ps.n_ps,ps.n_image-1);
             # G=zeros(ps.n_ifg,ps.n_image);
             # for i=1:ps.n_ifg

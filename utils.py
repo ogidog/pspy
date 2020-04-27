@@ -64,3 +64,14 @@ def compare_mat_file(file_name, *excluded_keys):
                     diff = {'diff': diff, 'max_error': 0, 'min_error': 0}
                     diffs[key] = diff
     return diffs
+
+
+def main(args):
+    diff = compare_mat_file('scla_smooth2.mat')
+
+    print(args)
+
+
+if __name__ == "__main__":
+    main(sys.argv)
+    sys.exit(0)

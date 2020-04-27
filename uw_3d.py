@@ -107,23 +107,19 @@ def uw_3d(*args):
         else:
             options['lowfilt_flag'] = 'y'
 
-    # TODO: uncomment
-    # uw_grid_wrapped(ph, xy, options['grid_size'], options['prefilt_win'], options['goldfilt_flag'],
-    #                options['lowfilt_flag'],
-    #                options['gold_alpha'], options['ph_uw_predef'])
+    uw_grid_wrapped(ph, xy, options['grid_size'], options['prefilt_win'], options['goldfilt_flag'],
+                    options['lowfilt_flag'],
+                    options['gold_alpha'], options['ph_uw_predef'])
 
-    # TODO: uncomment
-    # ph = []
-    # uw_interp()
+    ph = []
+    uw_interp()
 
-    # TODO: uncomment
-    # bperp = args[4]
-    # uw_sb_unwrap_space_time(day, ifgday_ix, options['unwrap_method'], options['time_win'], options['la_flag'], bperp,
-    #                        options['n_trial_wraps'], options['prefilt_win'], options['scf_flag'], options['temp'],
-    #                        options['n_temp_wraps'], options['max_bperp_for_temp_est'])
+    bperp = args[4]
+    uw_sb_unwrap_space_time(day, ifgday_ix, options['unwrap_method'], options['time_win'], options['la_flag'], bperp,
+                           options['n_trial_wraps'], options['prefilt_win'], options['scf_flag'], options['temp'],
+                            options['n_temp_wraps'], options['max_bperp_for_temp_est'])
 
-    # TODO: uncomment
-    # uw_stat_costs(options['unwrap_method'], options['variance'])
+    uw_stat_costs(options['unwrap_method'], options['variance'])
 
     ph_uw, msd = uw_unwrap_from_grid(xy, options['grid_size'])
 

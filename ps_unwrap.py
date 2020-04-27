@@ -5,7 +5,7 @@ from scipy.io import loadmat, savemat
 from getparm import get_parm_value as getparm
 from uw_3d import uw_3d
 
-from utils import compare_objects, not_supported_param
+from utils import compare_objects, not_supported_param, compare_mat_file
 
 
 def ps_unwrap():
@@ -29,9 +29,7 @@ def ps_unwrap():
         apsname = 'tca' + str(psver)
         phuwname = 'phuw' + str(psver)
     else:
-        print("You set the param small_baseline_flag={}, but not supported yet.".format(
-            getparm('small_baseline_flag')[0][0]))
-        sys.exit()
+        not_supported_param('small_baseline_flag', getparm('small_baseline_flag')[0][0])
         # sclaname=['scla_smooth_sb',num2str(psver)];
         # apsname=['tca_sb',num2str(psver)];
         # phuwname=['phuw_sb',num2str(psver),'.mat'];
@@ -55,9 +53,7 @@ def ps_unwrap():
                                     np.zeros(ps['n_ps'][0][0]).reshape(-1, 1),
                                     bp['bperp_mat'][:, ps['master_ix'][0][0] - 1:]), axis=1)
     else:
-        print("You set the param small_baseline_flag={}, but not supported yet.".format(
-            getparm('small_baseline_flag')[0][0]))
-        sys.exit()
+        not_supported_param('small_baseline_flag', getparm('small_baseline_flag')[0][0])
         # bperp_mat=bp.bperp_mat;
 
     if unwrap_patch_phase == 'y':
@@ -91,9 +87,7 @@ def ps_unwrap():
         print('Code to hold good values skipped')
 
     if unwrap_hold_good_values == 'y':
-        print("You set the param unwrap_hold_good_values={}, but not supported yet.".format(
-            getparm('unwrap_hold_good_values')[0][0]))
-        sys.exit()
+        not_supported_param('unwrap_hold_good_values', getparm('unwrap_hold_good_values')[0][0])
         # sb_identify_good_pixels
         # options.ph_uw_predef=nan(size(ph_w),'single');
         # uw=load(phuwname);
@@ -123,9 +117,7 @@ def ps_unwrap():
         scla.clear()
 
     if small_baseline_flag == 'y' and os.path.exists(sclaname + '.mat'):
-        print("You set the param small_baseline_flag={}, but not supported yet.".format(
-            getparm('small_baseline_flag')[0][0]))
-        sys.exit()
+        not_supported_param('small_baseline_flag', getparm('small_baseline_flag')[0][0])
     #    fprintf('   subtracting scla...\n')
     #    scla=load(sclaname);
     #    if size(scla.K_ps_uw,1)==ps.n_ps
@@ -151,9 +143,7 @@ def ps_unwrap():
     bp.clear()
 
     if os.path.exists(apsname + '.mat') and subtr_tropo == 'y':
-        print("You set the param subtr_tropo={}, but not supported yet.".format(
-            getparm('subtr_tropo')[0][0]))
-        sys.exit()
+        not_supported_param('subtr_tropo', getparm('subtr_tropo')[0][0])
     #    fprintf('   subtracting slave aps...\n')
     #    aps=load(apsname);
     #    [aps_corr,fig_name_tca,aps_flag] = ps_plot_tca(aps,aps_name);
@@ -194,9 +184,7 @@ def ps_unwrap():
     print('n_trial_wraps={}'.format(options['n_trial_wraps']))
 
     if small_baseline_flag == 'y':
-        print("You set the param small_baseline_flag={}, but not supported yet.".format(
-            getparm('small_baseline_flag')[0][0]))
-        sys.exit()
+        not_supported_param('small_baseline_flag', getparm('small_baseline_flag')[0][0])
         # %options.lowfilt_flag='y';
         # options.lowfilt_flag='n';
         # ifgday_ix=ps.ifgday_ix;
@@ -211,12 +199,58 @@ def ps_unwrap():
         day = ps['day'] - ps['master_day']
 
     if unwrap_hold_good_values == 'y':
-        print("You set the param unwrap_hold_good_values={}, but not supported yet.".format(
-            getparm('small_baseline_flag')[0][0]))
-        sys.exit()
+        not_supported_param('small_baseline_flag', getparm('small_baseline_flag')[0][0])
         # options.ph_uw_predef=options.ph_uw_predef(:,unwrap_ifg_index);
 
     ph_uw_some, msd_some = uw_3d(ph_w[:, unwrap_ifg_index], ps['xy'], day, ifgday_ix[unwrap_ifg_index, :],
                                  ps['bperp'][unwrap_ifg_index], options)
 
-    print()
+    ph_uw = np.zeros((ps['n_ps'][0][0], ps['n_ifg'][0][0]))
+    msd = np.zeros((ps['n_ifg'][0][0], 1))
+    ph_uw[:, unwrap_ifg_index] = ph_uw_some
+    msd[unwrap_ifg_index] = msd_some
+
+    if scla_subtracted_sw == 1 and small_baseline_flag != 'y':
+        print('Adding back SCLA and master AOE...\n')
+        scla = loadmat(sclaname + '.mat')
+        ph_uw = ph_uw + (np.multiply(np.tile(scla['K_ps_uw'], (1, ps['n_ifg'][0][0])), bperp_mat))
+        ph_uw = ph_uw + np.tile(scla['C_ps_uw'], (1, ps['n_ifg'][0][0]))
+        if ramp_subtracted_sw:
+            ph_uw = ph_uw + scla['ph_ramp']
+
+        scla.clear()
+        bp.clear()
+
+    if scla_subtracted_sw == 1 and small_baseline_flag == 'y':
+        not_supported_param('small_baseline_flag', 'y')
+        # fprintf('Adding back SCLA...\n')
+        # scla=load(sclaname);
+        # ph_uw=ph_uw+(repmat(scla.K_ps_uw,1,ps.n_ifg).*bperp_mat); % add back spatially correlated look angle error
+        # if ramp_subtracted_sw
+        #    ph_uw=ph_uw+scla.ph_ramp; % add back orbital ramps
+        # end
+        # clear bp scla
+
+    if os.path.exists(apsname + '.mat') and subtr_tropo == 'y':
+        not_supported_param('subtr_tropo', 'y')
+        # fprintf('Adding back slave APS...\n')
+        # aps=load(apsname);
+        # [aps_corr,fig_name_tca,aps_flag] = ps_plot_tca(aps,aps_name);
+        # ph_uw=ph_uw+aps_corr;
+        # clear aps
+
+    if unwrap_patch_phase == 'y':
+        not_supported_param('unwrap_patch_phase', 'y')
+        # pm=load(pmname);
+        # ph_w=pm.ph_patch./abs(pm.ph_patch);
+        # clear pm
+        # if ~strcmpi(small_baseline_flag,'y')
+        #    ph_w=[ph_w(:,1:ps.master_ix-1),zeros(ps.n_ps,1),ph_w(:,ps.master_ix:end)];
+        # end
+        # rc=load(rcname);
+        # ph_uw=ph_uw+angle(rc.ph_rc.*conj(ph_w));
+
+    ph_uw[:, np.setdiff1d(np.array([*range(ps['n_ifg'][0][0])]), unwrap_ifg_index)] = 0
+
+    phuw2 = {'ph_uw': ph_uw, 'msd': msd}
+    savemat(phuwname + '.mat', phuw2)

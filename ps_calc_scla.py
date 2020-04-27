@@ -11,6 +11,8 @@ from getparm import get_parm_value as getparm
 from ps_deramp import ps_deramp
 from ps_setref import ps_setref
 
+from utils import not_supported_param
+
 
 def f(x, *args):
     d = args[0]
@@ -41,10 +43,7 @@ def ps_calc_scla(use_small_baselines, coest_mean_vel):
     tropo_method = getparm('tropo_method')[0][0]
 
     if use_small_baselines != 0:
-        print("You set the param use_small_baselines={}, but not supported yet.".format(
-            getparm('use_small_baselines')[0][0]))
-        sys.exit()
-
+        not_supported_param('use_small_baselines', getparm('use_small_baselines')[0][0])
         # if small_baseline_flag != 'y':
         #    print('   Use small baselines requested but there are none')
         #    sys.exit()
@@ -52,9 +51,7 @@ def ps_calc_scla(use_small_baselines, coest_mean_vel):
     if use_small_baselines == 0:
         scla_drop_index = getparm('scla_drop_index')[0];
     else:
-        print("You set the param use_small_baselines={}, but not supported yet.".format(
-            getparm('use_small_baselines')[0][0]))
-        sys.exit()
+        not_supported_param('use_small_baselines', getparm('use_small_baselines')[0][0])
         # scla_drop_index = []  # getparm('sb_scla_drop_index',1);
         # print('   Using small baseline interferograms\n')
 
@@ -72,9 +69,7 @@ def ps_calc_scla(use_small_baselines, coest_mean_vel):
         apsname_old = 'aps' + str(psver)  # renamed to old
         apsname = 'tca' + str(psver)  # the new tca option
     else:
-        print("You set the param use_small_baselines={}, but not supported yet.".format(
-            getparm('use_small_baselines')[0][0]))
-        sys.exit(0)
+        not_supported_param('use_small_baselines', getparm('use_small_baselines')[0][0])
         # phuwname = 'phuw_sb' + str(psver)
         # sclaname = 'scla_sb' + str(psver)
         # apsname_old = 'aps_sb' + str(psver)  # renamed to old
@@ -97,9 +92,7 @@ def ps_calc_scla(use_small_baselines, coest_mean_vel):
     uw = loadmat(phuwname);
 
     if small_baseline_flag == 'y' and use_small_baselines == 0:
-        print("You set the param small_baseline_flag={}, but not supported yet.".format(
-            getparm('small_baseline_flag')[0][0]))
-        sys.exit(0)
+        not_supported_param('small_baseline_flag', getparm('small_baseline_flag')[0][0])
         # unwrap_ifg_index = np.arange(0, ps['n_image'][0][0])
         # n_ifg = ps['n_image'][0][0]
     else:
@@ -107,7 +100,7 @@ def ps_calc_scla(use_small_baselines, coest_mean_vel):
         n_ifg = ps['n_ifg'][0][0]
 
     if subtr_tropo == 'y':
-        print("You set the param subtr_tropo={}, but not supported yet.".format(getparm('subtr_tropo')[0][0]))
+        not_supported_param('subtr_tropo', getparm('subtr_tropo')[0][0])
         # Remove the tropo correction - TRAIN support
         # recompute the APS inversion on the fly as user migth have dropped
         # SB ifgs before and needs new update of the SM APS too.
@@ -162,9 +155,7 @@ def ps_calc_scla(use_small_baselines, coest_mean_vel):
 
     if use_small_baselines == 0:
         if small_baseline_flag == 'y':
-            print("You set the param small_baseline_flag={}, but not supported yet.".format(
-                getparm('small_baseline_flag')[0][0]))
-            sys.exit(0)
+            not_supported_param('small_baseline_flag', getparm('small_baseline_flag')[0][0])
             # bperp_mat=zeros(ps.n_ps,ps.n_image,'single');
             # G=zeros(ps.n_ifg,ps.n_image);
             # for i=1:ps.n_ifg
@@ -190,9 +181,7 @@ def ps_calc_scla(use_small_baselines, coest_mean_vel):
         bperp = np.diff(bperp_mat[:, unwrap_ifg_index], 1)
 
     else:
-        print("You set the param use_small_baselines={}, but not supported yet.".format(
-            getparm('use_small_baselines')[0][0]))
-
+        not_supported_param('use_small_baselines', getparm('use_small_baselines')[0][0])
         # bperp_mat=bp.bperp_mat;
         # bperp=bperp_mat(:,unwrap_ifg_index);
         # day=ps.ifgday(unwrap_ifg_index,2)-ps.ifgday(unwrap_ifg_index,1);
@@ -204,8 +193,7 @@ def ps_calc_scla(use_small_baselines, coest_mean_vel):
 
     for i in range(len(ph[0])):
         if use_small_baselines != 0:
-            print("You set the param use_small_baselines={}, but not supported yet.".format(
-                getparm('use_small_baselines')[0][0]))
+            not_supported_param('use_small_baselines', getparm('use_small_baselines')[0][0])
             # logit(sprintf('   %s to %s %5d days %5d m',datestr(ps.ifgday(unwrap_ifg_index(i),1)),datestr(ps.ifgday(unwrap_ifg_index(i),2)),day(i),round(bprint(i))))
         else:
             print('PS_CALC_SCLA:     {} to {} {} days {} m'.format(
@@ -223,8 +211,7 @@ def ps_calc_scla(use_small_baselines, coest_mean_vel):
     ifg_vcm = np.eye(ps['n_ifg'][0][0]);
 
     if small_baseline_flag == 'y':
-        print("You set the param small_baseline_flag={}, but not supported yet.".format(
-            getparm('small_baseline_flag')[0][0]))
+        not_supported_param('small_baseline_flag', getparm('small_baseline_flag')[0][0])
         # if use_small_baselines==0
         #    phuwres=load(phuwsbresname,'sm_cov');
         #    if isfield(phuwres,'sm_cov')
@@ -244,9 +231,7 @@ def ps_calc_scla(use_small_baselines, coest_mean_vel):
     if use_small_baselines == 0:
         ifg_vcm_use = np.eye(len(ph[0]))
     else:
-        print("You set the param use_small_baselines={}, but not supported yet.".format(
-            getparm('use_small_baselines')[0][0]))
-        sys.exit(0)
+        not_supported_param('use_small_baselines', getparm('use_small_baselines')[0][0])
         # ifg_vcm_use=ifg_vcm(unwrap_ifg_index,unwrap_ifg_index);
 
     # solving x = inv(A'*inv(V)*A)*A'*inv(V)*B, L2-norm
