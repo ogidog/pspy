@@ -1,13 +1,15 @@
 import sys, os
 import numpy as np
 
-from scipy.io import savemat
+from scipy.io import savemat, loadmat
 
+from ps_correct_phase import ps_correct_phase
 from ps_parms_default import ps_parms_default
 from ps_unwrap import ps_unwrap
 from ps_calc_scla import ps_calc_scla
 from ps_smooth_scla import ps_smooth_scla
 from getparm import get_parm_value as getparm
+from setpsver import setpsver
 from utils import not_supported_param
 
 
@@ -87,15 +89,54 @@ def main(args):
 
     start_step_or = start_step
     if stamps_PART1_flag == 'y':
-        for i in range(0, len(patchdir)):
-            if 'name' in patchdir.keys():
-                os.chdir(patchdir['name'][i])
+        patches = patchdir['name']
+        for i in range(0, len(patches)):
+            if len(patches[i]):
+                os.chdir(patches[i])
                 patchsplit = os.getcwd().split(os.path.sep)
 
                 if not os.path.exists('no_ps_info.mat'):
                     stamps_step_no_ps = np.zeros((5, 1))
                     stamps_step_no_ps = {'stamps_step_no_ps': stamps_step_no_ps}
                     savemat('no_ps_info.mat', stamps_step_no_ps)
+
+                if start_step_or == 0:
+                    if os.path.exists('weed1.mat'):
+                        start_step = 5
+                        setpsver(2)
+                    else:
+                        if os.path.exists('select1.mat'):
+                            start_step = 4
+                        else:
+                            if os.path.exists('pm1.mat'):
+                                start_step = 3
+                            else:
+                                if os.path.exists('ps1.mat'):
+                                    start_step = 2
+                                else:
+                                    start_step = 1
+
+                    if start_step > end_step:
+                        print('\n' + patchsplit[len(patchsplit) - 1] + ': already up to end stage {}'.format(
+                            str(end_step)) + ' \n')
+                    else:
+                        print('\n' + patchsplit[len(patchsplit) - 1] + ': complete up to stage {}'.format(
+                            str(end_step - 1)) + ' \n')
+
+                if start_step <= 5 & end_step >= 5:
+                    print('Directory is {}'.format(patchsplit[len(patchsplit) - 1]))
+                    no_ps_info = loadmat('no_ps_info.mat')
+                    stamps_step_no_ps = no_ps_info['stamps_step_no_ps']
+                    stamps_step_no_ps[4:] = 0
+                    if stamps_step_no_ps[3] == 0:
+                        ps_correct_phase()
+                    else:
+                        print('No PS left in step 4, so will skip step 5 \n')
+                        stamps_step_no_ps[4] = 1
+                    no_ps_info['stamps_step_no_ps'] = stamps_step_no_ps
+                    savemat('no_ps_info.mat', no_ps_info)
+
+                os.chdir(currdir)
 
     if start_step <= 6 and end_step >= 6:
         print('\n##################\n' +
