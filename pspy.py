@@ -1,4 +1,7 @@
 import sys, os
+import numpy as np
+
+from scipy.io import savemat
 
 from ps_parms_default import ps_parms_default
 from ps_unwrap import ps_unwrap
@@ -81,6 +84,18 @@ def main(args):
         print('Will process patch subdirectories')
 
     currdir = os.getcwd()
+
+    start_step_or = start_step
+    if stamps_PART1_flag == 'y':
+        for i in range(0, len(patchdir)):
+            if 'name' in patchdir.keys():
+                os.chdir(patchdir['name'][i])
+                patchsplit = os.getcwd().split(os.path.sep)
+
+                if not os.path.exists('no_ps_info.mat'):
+                    stamps_step_no_ps = np.zeros((5, 1))
+                    stamps_step_no_ps = {'stamps_step_no_ps': stamps_step_no_ps}
+                    savemat('no_ps_info.mat', stamps_step_no_ps)
 
     if start_step <= 6 and end_step >= 6:
         print('\n##################\n' +
