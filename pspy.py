@@ -1,9 +1,10 @@
-import sys, os
+import sys, os, shutil
 import numpy as np
 
 from scipy.io import savemat, loadmat
 
 from ps_correct_phase import ps_correct_phase
+from ps_merge_patches import ps_merge_patches
 from ps_parms_default import ps_parms_default
 from ps_unwrap import ps_unwrap
 from ps_calc_scla import ps_calc_scla
@@ -123,7 +124,7 @@ def main(args):
                         print('\n' + patchsplit[len(patchsplit) - 1] + ': complete up to stage {}'.format(
                             str(end_step - 1)) + ' \n')
 
-                if start_step <= 5 & end_step >= 5:
+                if start_step <= 5 and end_step >= 5:
                     print('Directory is {}'.format(patchsplit[len(patchsplit) - 1]))
                     no_ps_info = loadmat('no_ps_info.mat')
                     stamps_step_no_ps = no_ps_info['stamps_step_no_ps']
@@ -137,6 +138,39 @@ def main(args):
                     savemat('no_ps_info.mat', no_ps_info)
 
                 os.chdir(currdir)
+
+    patchsplit = os.getcwd().split(os.path.sep)
+
+    if stamps_PART2_flag == 'y':
+        if patches_flag == 'y':
+            fid = open('patch.list_new', 'w')
+            for i in range(0, len(patchdir['name'])):
+                filename_PS_check = patchdir['name'][i] + os.path.sep + 'no_ps_info.mat'
+                keep_patch = 1
+                if os.path.exists(filename_PS_check):
+                    filename_PS_check = loadmat(filename_PS_check)
+                    if sum(filename_PS_check['stamps_step_no_ps']) >= 1:
+                        keep_patch = 0
+
+                if keep_patch == 1:
+                    fid.write(patchdir['name'][i] + '\n')
+
+                if i == len(patchdir['name']) - 1:
+                    fid.close()
+
+            shutil.copy('patch.list', 'patch.list_old')
+            shutil.copy('patch.list_new', 'patch.list')
+
+        if start_step <= 5 and end_step >= 5:
+            abord_flag = 0
+            if patches_flag == 'y':
+                print('Directory is {}'.format(patchsplit[len(patchsplit) - 1]))
+                ps_merge_patches()
+            else:
+                if os.path.exists('no_ps_info.mat'):
+                    no_ps_info = loadmat('no_ps_info.mat')
+                    if sum(no_ps_info['stamps_step_no_ps']) >= 1:
+                        abord_flag = 1
 
     if start_step <= 6 and end_step >= 6:
         print('\n##################\n' +
