@@ -45,8 +45,8 @@ def ps_merge_patches(*args):
     n_patch = len(dirname['name'])
     remove_ix=[]
     ij=np.zeros((0,2))
-    lonlat=np.zeros(0,2);
-    ph=zeros(0,0);
+    lonlat=np.zeros((0,2))
+    ph=np.zeros((0,0))
     ph_rc=zeros(0,0);
     ph_reref=zeros(0,0);
     ph_uw=zeros(0,0);
