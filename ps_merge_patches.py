@@ -100,6 +100,6 @@ def ps_merge_patches(*args):
 
             if grid_size == 0:
                 C, IA, IB = np.intersect1d(ps['ij'][ix, 1:3], ij, return_indices=True)
-                remove_ix=[remove_ix;IB]
+                remove_ix=[remove_ix,IB]
                 #diff = compare_objects(ix, 'ix')
                 print('ggg')
