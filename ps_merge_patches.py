@@ -1,7 +1,10 @@
 import os
 
 import numpy as np
+from scipy.io import loadmat
+
 from getparm import get_parm_value as getparm
+from utils import compare_objects
 
 
 def ps_merge_patches(*args):
@@ -34,37 +37,69 @@ def ps_merge_patches(*args):
     if os.path.exists('patch.list'):
         dirname = {'name': []}
         fid = open('patch.list', 'r')
-        line = fid.readline()
+        line = fid.readline().strip()
         while line:
             dirname['name'].append(line)
-            line = fid.readline()
+            line = fid.readline().strip()
         fid.close()
     else:
         dirname = {'name': np.array([dir for dir in os.listdir() if 'PATCH_' in dir])}
 
     n_patch = len(dirname['name'])
-    remove_ix=[]
-    ij=np.zeros((0,2))
-    lonlat=np.zeros((0,2))
-    ph=np.zeros((0,0))
-    ph_rc=zeros(0,0);
-    ph_reref=zeros(0,0);
-    ph_uw=zeros(0,0);
-    ph_patch=zeros(0,0);
-    ph_res=zeros(0,0);
-    ph_scla=zeros(0,0,'single');
-    ph_scla_sb=zeros(0,0,'single');
-    ph_scn_master=zeros(0,0);
-    ph_scn_slave=zeros(0,0);
-    K_ps=zeros(0,0);
-    C_ps=zeros(0,0);
-    coh_ps=zeros(0,0);
-    K_ps_uw=zeros(0,0,'single');
-    K_ps_uw_sb=zeros(0,0,'single');
-    C_ps_uw=zeros(0,0,'single');
-    C_ps_uw_sb=zeros(0,0,'single');
-    bperp_mat=zeros(0,0,'single');
-    la=zeros(0,0);
-    inc=zeros(0,0);
-    hgt=zeros(0,0);
-    amp=zeros(0,0,'single');
+    remove_ix = []
+    ij = np.zeros((0, 2))
+    lonlat = np.zeros((0, 2))
+    ph = np.zeros((0, 0))
+    ph_rc = np.zeros((0, 0))
+    ph_reref = np.zeros((0, 0))
+    ph_uw = np.zeros((0, 0))
+    ph_patch = np.zeros((0, 0))
+    ph_res = np.zeros((0, 0))
+    ph_scla = np.zeros((0, 0))
+    ph_scla_sb = np.zeros((0, 0))
+    ph_scn_master = np.zeros((0, 0))
+    ph_scn_slave = np.zeros((0, 0))
+    K_ps = np.zeros((0, 0))
+    C_ps = np.zeros((0, 0))
+    coh_ps = np.zeros((0, 0))
+    K_ps_uw = np.zeros((0, 0))
+    K_ps_uw_sb = np.zeros((0, 0))
+    C_ps_uw = np.zeros((0, 0))
+    C_ps_uw_sb = np.zeros((0, 0))
+    bperp_mat = np.zeros((0, 0))
+    la = np.zeros((0, 0))
+    inc = np.zeros((0, 0))
+    hgt = np.zeros((0, 0))
+    amp = np.zeros((0, 0))
+
+    for i in range(0, n_patch):
+        if dirname['name'][i]:
+            print('   Processing {}\n'.format(dirname['name'][i]))
+            os.chdir('.' + os.path.sep + dirname['name'][i])
+            ps = loadmat(psname + '.mat')
+            n_ifg = ps['n_ifg'][0][0]
+            if 'n_image' in ps.keys():
+                n_image = ps['n_image'][0][0]
+            else:
+                n_image = ps['n_ifg'][0][0]
+
+            patch = {'ij': []}
+            fid = open('patch_noover.in', 'r')
+            line = fid.readline().strip()
+            while line:
+                patch['ij'].append(int(line))
+                line = fid.readline().strip()
+            fid.close()
+            patch['ij'] = np.array(patch['ij'])
+            ix = ((ps['ij'][:, 1] >= patch['ij'][2] - 1) & (ps['ij'][:, 1] <= patch['ij'][3] - 1) & (
+                    ps['ij'][:, 2] >= patch['ij'][0] - 1) & (ps['ij'][:, 2] <= patch['ij'][1] - 1))
+            if sum(ix) == 0:
+                ix_no_ps = 1
+            else:
+                ix_no_ps = 0
+
+            if grid_size == 0:
+                C, IA, IB = np.intersect1d(ps['ij'][ix, 1:3], ij, return_indices=True)
+                remove_ix=[remove_ix;IB]
+                #diff = compare_objects(ix, 'ix')
+                print('ggg')
