@@ -2,9 +2,17 @@ import sys
 import numpy as np
 from scipy.io import loadmat, savemat
 
+def not_supported():
+    raise Exception("not supported")
+    sys.exit(0)
 
 def not_supported_param(param, value):
     raise Exception("You set the param {}={}, but not supported yet.".format(param, value))
+    sys.exit(0)
+
+
+def not_supported_value(var, value):
+    raise Exception("{}={} not supported.".format(var, value))
     sys.exit(0)
 
 
