@@ -4,6 +4,7 @@ import numpy as np
 from scipy.io import loadmat
 
 from getparm import get_parm_value as getparm
+from llh2local import llh2local
 from utils import compare_objects, not_supported_value, not_supported, not_supported_param
 
 
@@ -421,6 +422,8 @@ def ps_merge_patches(*args):
                     # clear phuw
                 else:
                     zeros = np.zeros((np.sum(ix), n_image))
+                    if len(ph_uw) == 0:
+                        ph_uw = ph_uw.reshape(0, np.shape(zeros)[1])
                     ph_uw = np.concatenate((ph_uw, zeros), axis=0)
 
                 if os.path.exists(sclaname + '.mat'):
@@ -467,5 +470,42 @@ def ps_merge_patches(*args):
 
             os.chdir('..')
 
-    # diff = compare_objects(ix, 'ix')
+    ps_new = ps
+    n_ps_orig = len(ij)
+    keep_ix = ix_ex = np.ones((n_ps_orig, 1)).astype('bool').flatten()
+    keep_ix[remove_ix.astype('int')] = 0
+    lonlat_save = lonlat
+    coh_ps_weed = coh_ps[keep_ix]
+    lonlat = lonlat[keep_ix, :]
+
+    dummy, I = np.unique(lonlat, return_index=True, axis=0)
+    dups = np.setxor1d(I, np.array([*range(len(lonlat))]))
+    keep_ix_num = np.nonzero(keep_ix)[0]
+
+    for i in range(len(dups)):
+        not_supported()
+        # dups_ix_weed=find(lonlat(:,1)==lonlat(dups(i),1)&lonlat(:,2)==lonlat(dups(i),2));
+        # dups_ix=keep_ix_num(dups_ix_weed);
+        # [dummy,I]=max(coh_ps_weed(dups_ix_weed));
+        # keep_ix(dups_ix([1:end]~=I))=0; % drop dups with lowest coh
+
+    if len(dups) > 0:
+        lonlat = lonlat_save[keep_ix, :]
+        print('   {} pixel with duplicate lon/lat dropped\n'.format(len(dups)))
+
+    lonlat_save = []
+
+    ll0 = (np.max(lonlat, axis=0) + np.min(lonlat, axis=0)) / 2
+    xy = llh2local(lonlat.T, ll0) * 1000
+    xy = xy.T
+    sort_x = xy[xy[:, 0].argsort()]
+    sort_y = xy[xy[:, 1].argsort()]
+
+    n_pc = int(np.round(len(xy) * 0.001))
+    bl = np.mean(sort_x[0:n_pc, :], axis=0)
+    tr = np.mean(sort_x[len(sort_x) - n_pc:, :], axis=0)
+    br = np.mean(sort_y[0:n_pc, :], axis=0)
+    tl = np.mean(sort_y[len(sort_y) - n_pc:, :], axis=0)
+
+    #diff = compare_objects(sort_y, 'sort_y')
     print(os.getcwd())
