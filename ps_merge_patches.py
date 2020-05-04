@@ -498,14 +498,26 @@ def ps_merge_patches(*args):
     ll0 = (np.max(lonlat, axis=0) + np.min(lonlat, axis=0)) / 2
     xy = llh2local(lonlat.T, ll0) * 1000
     xy = xy.T
-    sort_x = xy[xy[:, 0].argsort()]
-    sort_y = xy[xy[:, 1].argsort()]
+    sort_x = xy[np.argsort(xy[:, 0], kind='stable')]
+    sort_y = xy[np.argsort(xy[:, 1], kind='stable')]
 
     n_pc = int(np.round(len(xy) * 0.001))
     bl = np.mean(sort_x[0:n_pc, :], axis=0)
-    tr = np.mean(sort_x[len(sort_x) - n_pc:, :], axis=0)
+    tr = np.mean(sort_x[len(sort_x) - n_pc - 1:, :], axis=0)
     br = np.mean(sort_y[0:n_pc, :], axis=0)
-    tl = np.mean(sort_y[len(sort_y) - n_pc:, :], axis=0)
+    tl = np.mean(sort_y[len(sort_y) - n_pc - 1:, :], axis=0)
 
-    #diff = compare_objects(sort_y, 'sort_y')
+    try:
+        heading = getparm('heading')[0][0][0]
+    except:
+        heading = 0
+    theta = (180 - heading) * np.pi / 180
+    if theta > np.pi:
+        theta = theta - 2 * np.pi
+
+    rotm = np.array([[np.cos(theta), np.sin(theta)], [-np.sin(theta), np.cos(theta)]])
+    xy = xy.T
+    xynew = np.dot(rotm, xy)
+
+    # diff = compare_objects(sort_y, 'sort_y')
     print(os.getcwd())
