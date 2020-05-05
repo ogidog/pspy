@@ -519,5 +519,21 @@ def ps_merge_patches(*args):
     xy = xy.T
     xynew = np.dot(rotm, xy)
 
+    if max(xynew[0, :]) - min(xynew[0, :]) < max(xy[0, :]) - min(xy[0, :]) and max(xynew[1, :]) - min(
+            xynew[1, :]) < max(
+        xy[1, :]) - min(xy[1, :]):
+        xy = xynew
+        print('   Rotating xy by {}  degrees'.format(str(theta * 180 / np.pi)))
+
+    xynew = []
+    xy = xy.astype('float32').T
+    xy_list = xy.tolist()
+    xy_sort = np.array(sorted(xy_list, key=lambda t: (t[1], t[0])))
+    sort_ix = np.array(sorted(range(len(xy_list)), key=lambda s: (xy_list[s][1], xy_list[s][0])))
+
+    xy = xy[sort_ix, :]
+    xy = np.concatenate((np.array([*range(len(xy))]).reshape(-1, 1) + 1, xy), axis=1)
+    xy[:, 1:3] = np.round(xy[:, 1:3] * 1000) / 1000
+
     # diff = compare_objects(sort_y, 'sort_y')
     print(os.getcwd())
