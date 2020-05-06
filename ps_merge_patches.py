@@ -562,5 +562,34 @@ def ps_merge_patches(*args):
         savemat(phuwname + '.mat', phuw2)
     ph_uw = []
 
+    ph_patch = ph_patch[sort_ix.flatten(), :]
+    if len(ph_res) == n_ps_orig:
+        ph_res = ph_res[sort_ix.flatten(), :]
+    else:
+        ph_res = []
+    if len(K_ps) == n_ps_orig:
+        K_ps = K_ps[sort_ix.flatten(), :]
+    else:
+        K_ps = []
+    if len(C_ps) == n_ps_orig:
+        C_ps = C_ps[sort_ix.flatten(), :]
+    else:
+        C_ps = []
+    if len(coh_ps) == n_ps_orig:
+        coh_ps = coh_ps[sort_ix.flatten(), :]
+    else:
+        coh_ps = []
+    pm['ph_patch'] = ph_patch
+    pm['ph_res'] = ph_res
+    pm['K_ps'] = K_ps
+    pm['C_ps'] = C_ps
+    pm['coh_ps'] = coh_ps
+    savemat(pmname + '.mat', pm)
+    ph_patch = []
+    ph_res = []
+    K_ps = []
+    C_ps = []
+    coh_ps = []
+
     # diff = compare_objects(sort_y, 'sort_y')
     print('ggg')
