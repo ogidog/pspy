@@ -1,11 +1,11 @@
 import os
 
 import numpy as np
-from scipy.io import loadmat
+from scipy.io import loadmat, savemat
 
 from getparm import get_parm_value as getparm
 from llh2local import llh2local
-from utils import compare_objects, not_supported_value, not_supported, not_supported_param
+from utils import compare_objects, compare_mat_file, not_supported_value, not_supported, not_supported_param
 
 
 def intersect(A, B):
@@ -534,6 +534,33 @@ def ps_merge_patches(*args):
     xy = xy[sort_ix, :]
     xy = np.concatenate((np.array([*range(len(xy))]).reshape(-1, 1) + 1, xy), axis=1)
     xy[:, 1:3] = np.round(xy[:, 1:3] * 1000) / 1000
+    lonlat = lonlat[sort_ix, :]
+
+    all_ix = np.array([*range(len(ij))]).reshape(-1, 1)
+    keep_ix = all_ix[keep_ix]
+    sort_ix = keep_ix[sort_ix]
+
+    n_ps = len(sort_ix)
+    print('   Writing merged dataset (contains {} pixels)\n'.format(str(n_ps)))
+
+    ij = ij[sort_ix.flatten(), :]
+
+    ph_rc = ph_rc[sort_ix.flatten(), :]
+    ph_rc[ph_rc != 0] = np.divide(ph_rc[ph_rc != 0], np.abs(ph_rc[ph_rc != 0]))
+    if small_baseline_flag != 'y':
+        ph_reref = ph_reref[sort_ix.flatten(), :]
+
+    rc['ph_rc'] = ph_rc
+    rc['ph_reref'] = ph_reref
+    savemat(rcname + '.mat', rc)
+    ph_rc = []
+    ph_reref = []
+
+    if len(ph_uw) == n_ps_orig:
+        ph_uw = ph_uw[sort_ix.flatten(), :]
+        phuw2 = {'ph_uw': ph_uw}
+        savemat(phuwname + '.mat', phuw2)
+    ph_uw = []
 
     # diff = compare_objects(sort_y, 'sort_y')
-    print(os.getcwd())
+    print('ggg')
