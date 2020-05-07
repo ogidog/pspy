@@ -651,6 +651,22 @@ def ps_merge_patches(*args):
     savemat(hgtname + '.mat', hgtin)
     hgt = []
 
-    # diff = compare_objects(sort_y, 'sort_y')
-    diff = compare_mat_file(hgtname + '.mat')
-    print('ggg')
+    bperp_mat = bperp_mat[sort_ix.flatten(), :]
+    bp['bperp_mat'] = bperp_mat
+    savemat(bpname + '.mat', bp)
+    bperp_mat = []
+
+    ps_new['n_ps'] = n_ps
+    ps_new['ij'] = np.concatenate(((np.array([*range(n_ps)]) + 1).reshape(-1, 1), ij), axis=1)
+    ps_new['xy'] = xy
+    ps_new['lonlat'] = lonlat
+    savemat(psname + '.mat', ps_new)
+    ps_new.clear()
+
+    savemat('psver.mat', {'psver': psver})
+
+    if os.path.exists('mean_amp.flt'):
+        os.remove('mean_amp.flt')
+
+    if os.path.exists('amp_mean.mat'):
+        os.remove('amp_mean.mat')

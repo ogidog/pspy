@@ -3,6 +3,7 @@ import numpy as np
 
 from scipy.io import savemat, loadmat
 
+from ps_calc_ifg_std import ps_calc_ifg_std
 from ps_correct_phase import ps_correct_phase
 from ps_merge_patches import ps_merge_patches
 from ps_parms_default import ps_parms_default
@@ -172,33 +173,38 @@ def main(args):
                     if sum(no_ps_info['stamps_step_no_ps']) >= 1:
                         abord_flag = 1
 
-    if start_step <= 6 and end_step >= 6:
-        print('\n##################\n' +
-              '##### Step 6 #####\n' +
-              '##################\n')
+            if abord_flag == 0:
+                ps_calc_ifg_std()
+            else:
+                print('No PS left in step 4, so will skip step 5 \n')
 
-        print("Dirrectory is " + os.getcwd())
+        if start_step <= 6 and end_step >= 6:
+            print('\n##################\n' +
+                  '##### Step 6 #####\n' +
+                  '##################\n')
 
-        ps_unwrap()
-        if getparm('small_baseline_flag')[0][0] == 'y':
-            not_supported_param('use_small_baselines', 'y')
-            # sb_invert_uw
+            print("Dirrectory is " + os.getcwd())
 
-    if start_step <= 7 and end_step >= 7:
-        print('\n##################\n' +
-              '##### Step 7 #####\n' +
-              '##################\n')
+            ps_unwrap()
+            if getparm('small_baseline_flag')[0][0] == 'y':
+                not_supported_param('use_small_baselines', 'y')
+                # sb_invert_uw
 
-        print("Dirrectory is " + os.getcwd())
+        if start_step <= 7 and end_step >= 7:
+            print('\n##################\n' +
+                  '##### Step 7 #####\n' +
+                  '##################\n')
 
-        if getparm('small_baseline_flag')[0][0] == 'y':
-            not_supported_param('small_baseline_flag', 'y')
-            # ps_calc_scla(1,1)   % small baselines
-            # ps_smooth_scla(1)
-            # ps_calc_scla(0,1) % single master
-        else:
-            ps_calc_scla(0, 1)
-            ps_smooth_scla(0)
+            print("Dirrectory is " + os.getcwd())
+
+            if getparm('small_baseline_flag')[0][0] == 'y':
+                not_supported_param('small_baseline_flag', 'y')
+                # ps_calc_scla(1,1)   % small baselines
+                # ps_smooth_scla(1)
+                # ps_calc_scla(0,1) % single master
+            else:
+                ps_calc_scla(0, 1)
+                ps_smooth_scla(0)
 
 
 if __name__ == "__main__":
