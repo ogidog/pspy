@@ -369,9 +369,10 @@ def ps_merge_patches(*args):
                     #    clear la_g
                 lain.clear()
 
+            incin = {}
             if os.path.exists(incname + '.mat'):
                 not_supported()
-                # incin = loadmat(incname + '.mat')
+                incin = loadmat(incname + '.mat')
                 # if grid_size==0
                 #    inc=[inc;incin.inc(ix,:)];
                 # elseif grid_size ~=0 && ix_no_ps~=1
@@ -428,7 +429,7 @@ def ps_merge_patches(*args):
 
                 if os.path.exists(sclaname + '.mat'):
                     not_supported()
-                    # scla=load(sclaname);
+                    scla = loadmat(sclaname + '.mat')
                     # if ~isempty(C)
                     #    ph_scla_diff=mean(scla.ph_scla(IA,:)-ph_scla(IB,:));
                     #    K_ps_diff=mean(scla.K_ps_uw(IA,:)-K_ps_uw(IB,:));
@@ -591,5 +592,65 @@ def ps_merge_patches(*args):
     C_ps = []
     coh_ps = []
 
+    if len(ph_scla) == n_ps:
+        ph_scla = ph_scla[sort_ix.flatten(), :]
+        K_ps_uw = K_ps_uw[sort_ix.flatten(), :]
+        C_ps_uw = C_ps_uw[sort_ix.flatten(), :]
+        scla['ph_scla'] = ph_scla
+        scla['K_ps_uw'] = K_ps_uw
+        scla['C_ps_uw'] = C_ps_uw
+        savemat(sclaname + '.mat', scla)
+    ph_scla = []
+    K_ps_uw = []
+    C_ps_uw = []
+
+    if small_baseline_flag == 'y' and len(ph_scla_sb) == n_ps:
+        not_supported_param('small_baseline_flag', 'y')
+        # ph_scla=ph_scla_sb(sort_ix,:);
+        # K_ps_uw=K_ps_uw_sb(sort_ix,:);
+        # C_ps_uw=C_ps_uw_sb(sort_ix,:);
+        # stamps_save(sclasbname,ph_scla,K_ps_uw,C_ps_uw);
+        # clear ph_scla K_ps_uw C_ps_uw
+    # clear ph_scla_sb K_ps_uw_sb C_ps_uw_sb
+
+    if len(ph_scn_slave) == n_ps:
+        not_supported()
+        # ph_scn_slave=ph_scn_slave(sort_ix,:);
+        # stamps_save(scnname,ph_scn_slave);
+    # clear ph_scn_slave
+
+    if len(ph) == n_ps_orig:
+        ph = ph[sort_ix.flatten(), :]
+    else:
+        ph = []
+    phin['ph'] = ph
+    savemat(phname + '.mat', phin)
+    ph = []
+
+    if len(la) == n_ps_orig:
+        la = la[sort_ix.flatten(), :]
+    else:
+        la = []
+    lain['la'] = la
+    savemat(laname + '.mat', lain)
+    la = []
+
+    if len(inc) == n_ps_orig:
+        inc = inc[sort_ix.flatten(), :]
+    else:
+        inc = []
+    incin['inc'] = inc
+    savemat(incname + '.mat', incin)
+    inc = []
+
+    if len(hgt) == n_ps_orig:
+        hgt = hgt[sort_ix.flatten(), :]
+    else:
+        hgt = []
+    hgtin['hgt'] = hgt
+    savemat(hgtname + '.mat', hgtin)
+    hgt = []
+
     # diff = compare_objects(sort_y, 'sort_y')
+    diff = compare_mat_file(hgtname + '.mat')
     print('ggg')
