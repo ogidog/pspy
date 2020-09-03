@@ -1,4 +1,4 @@
-import sys
+import sys, os
 import shapefile
 from datetime import date
 
@@ -8,9 +8,10 @@ from scipy.io import loadmat
 def main(args):
     ts_plot_file = args[1]
     ps_plot_file = args[2]
+    outputDir = args[3]
 
-    ts_v_d = loadmat(ts_plot_file)
-    v_d = loadmat(ps_plot_file)
+    ts_v_d = loadmat(outputDir + os.path.sep + ts_plot_file)
+    v_d = loadmat(outputDir + os.path.sep + ps_plot_file)
 
     ph_disp = v_d["ph_disp"].flatten()
     ph_mm = ts_v_d["ph_mm"]
@@ -18,7 +19,7 @@ def main(args):
     days = ts_v_d["day"].flatten()
     ids = ts_v_d["ref_ps"].flatten()
 
-    w = shapefile.Writer("ts_v-d", shapeType=1)
+    w = shapefile.Writer(outputDir + os.path.sep + "ts_v-d", shapeType=1)
     w.field("id", "N")
     w.field("vel", "N", decimal=10)
     for day in days:

@@ -81,9 +81,8 @@ def main(args):
             patches_flag = 'y'
 
     if patches_flag != 'y':
-        not_supported_param('patches_flag', patches_flag)
-        # patchdir(1).name='.';
-        # logit('Will process current directory only')
+        patchdir = {'name': '.'}
+        print('Will process current directory only')
     else:
         print('Will process patch subdirectories')
 
