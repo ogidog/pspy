@@ -44,7 +44,8 @@ def print_parm(parms, key):
 
 def get_parm_value(parmname):
 
-    ps_parms_default
+    ps_parms_default()
+
     parms, localparms = load_parms_file()
     parmnames = list(filter(lambda fkey: '__' not in fkey, list(parms.keys())))
 
@@ -74,7 +75,7 @@ def load_parms_file():
 
     else:
         if os.path.exists('../parms.mat'):
-            parmfile = '../parms';
+            parmfile = '../parms.mat';
             parms = loadmat(parmfile)
         else:
             print('parms.mat not found')
@@ -88,7 +89,7 @@ def load_parms_file():
 
 
 def main(args):
-    ps_parms_default
+    ps_parms_default()
 
     args = args[1:]
 

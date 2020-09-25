@@ -16,6 +16,7 @@ from utils import not_supported_param
 
 
 def main(args):
+
     quick_est_gamma_flag = getparm('quick_est_gamma_flag')[0][0]
     reest_gamma_flag = getparm('select_reest_gamma_flag')[0][0]
     unwrap_method = getparm('unwrap_method')[0][0]
