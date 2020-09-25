@@ -124,6 +124,13 @@ def main(args):
                         print('\n' + patchsplit[len(patchsplit) - 1] + ': complete up to stage {}'.format(
                             str(end_step - 1)) + ' \n')
 
+                if start_step == 1:
+                    print('\n##################\n' +
+                          '##### Step 1 #####\n' +
+                          '##################\n')
+
+                    print('Directory is {} \n'.format(patchsplit[len(patchsplit) - 1]))
+
                 if start_step <= 5 and end_step >= 5:
                     print('Directory is {}'.format(patchsplit[len(patchsplit) - 1]))
                     no_ps_info = loadmat('no_ps_info.mat')
