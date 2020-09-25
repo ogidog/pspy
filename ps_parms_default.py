@@ -8,11 +8,11 @@ def ps_parms_default():
     parmfile = 'parms.mat';
     parent_flag = 0;
 
-    if os.path.exists('./parms.mat'):
+    if os.path.exists('.' + os.path.sep + parmfile):
         parms = loadmat(parmfile);
     else:
-        if os.path.exists('../parms.mat'):
-            parmfile = '../parms.mat';
+        if os.path.exists('..' + os.path.sep + parmfile):
+            parmfile = '..' + os.path.sep + parmfile;
             parms = loadmat(parmfile);
             parent_flag = 1;
         else:
@@ -194,6 +194,115 @@ def ps_parms_default():
     if 'ref_lon' not in parmfields_before:
         parms['ref_lon'] = [float('-inf'), float('inf')]
 
-    # TODO: save
+    if 'ref_lat' not in parmfields_before:
+        parms['ref_lat'] = [float('-inf'), float('inf')]
 
-# sys.exit(0)
+    if 'ref_centre_lonlat' not in parmfields_before:
+        parms['ref_centre_lonlat'] = [0, 0]
+
+    if 'ref_radius' not in parmfields_before:
+        parms['ref_radius'] = float('inf')
+
+    if 'ref_velocity' not in parmfields_before:
+        parms['ref_velocity'] = 0
+
+    if 'n_cores' not in parmfields_before:
+        parms['n_cores'] = 1
+
+    if 'plot_dem_posting' not in parmfields_before:
+        parms['plot_dem_posting'] = 90
+
+    if 'plot_pixel_size' in parmfields_before:
+        parms['plot_scatterer_size'] = parms['plot_pixel_size'] * 25
+        num_fields = 0;
+        del parms['plot_pixel_size']
+
+    if 'plot_scatterer_size' not in parmfields_before:
+        parms['plot_scatterer_size'] = 120
+
+    if 'plot_pixels_scatterer' not in parmfields_before:
+        parms['plot_pixels_scatterer'] = 3
+
+    if 'plot_color_scheme' not in parmfields_before:
+        parms['plot_color_scheme'] = 'inflation'
+
+    if 'pixel_aspect_ratio' in parmfields_before:
+        del parms['pixel_aspect_ratio']
+
+    if 'shade_rel_angle' not in parmfields_before:
+        parms['shade_rel_angle'] = [90, 45]
+
+    if 'lonlat_offset' not in parmfields_before:
+        parms['lonlat_offset'] = [0, 0]
+
+    if 'lonlat_offset' not in parmfields_before:
+        parms['lonlat_offset'] = [0, 0]
+
+    if 'merge_resample_size' not in parmfields_before:
+        if parms['small_baseline_flag'] == 'y':
+            parms['merge_resample_size'] = 100
+        else:
+            parms['merge_resample_size'] = 0
+
+    if 'merge_standard_dev' not in parmfields_before:
+        parms['merge_standard_dev'] = float('inf')
+
+    if 'scla_method' not in parmfields_before:
+        parms['scla_method'] = 'L2'
+
+    if 'scla_deramp' not in parmfields_before:
+        parms['scla_deramp'] = 'n'
+
+    lambdaname = 'lambda.1.in'
+    if 'lambda' not in parmfields_before:
+        if not os.path.exists(lambdaname):
+            lambdaname = '..' + os.path.sep + lambdaname
+        if not os.path.exists(lambdaname):
+            lambdaname = '..' + os.path.sep + lambdaname
+        if not os.path.exists(lambdaname):
+            parms['lambda'] = float('nan')
+        else:
+            lambda1 = loadmat(lambdaname)
+            parms['lambda'] = lambda1
+
+    headingname = 'heading.1.in'
+    if 'heading' not in parmfields_before:
+        if not os.path.exists(headingname):
+            headingname = '..' + os.path.sep + headingname
+        if not os.path.exists(headingname):
+            headingname = '..' + os.path.sep + headingname
+        if not os.path.exists(headingname):
+            parms['heading'] = float('nan')
+        else:
+            heading = loadmat(headingname)
+            parms['heading'] = heading
+
+    if 'scla_deramp' not in parmfields_before:
+        parms['scla_deramp'] = 'n'
+
+    if 'sb_scla_drop_index' not in parmfields_before:
+        if parms['small_baseline_flag'] == 'y':
+            parms['sb_scla_drop_index'] = []
+
+    if 'insar_processor' not in parmfields_before:
+        processor_file = 'processor.txt';
+        if os.path.splitext(processor_file) not in ['.m', '.mlx', '.mlapp', '.mat', '.fig', '.txt']:
+            if os.path.splitext('..'+ os.path.sep + processor_file) in ['.m', '.mlx', '.mlapp', '.mat', '.fig', '.txt']:
+                processor_file ='..' + os.path.sep + processor_file
+                if os.path.splitext('..'+ os.path.sep + processor_file) in ['.m', '.mlx', '.mlapp', '.mat', '.fig', '.txt']:
+                    processor_file ='..' + os.path.sep + processor_file
+
+            if exist(processor_file, 'file')~=2
+            parms.insar_processor='doris'; %
+            else
+            processor = fileread(processor_file);
+            processor = strtrim(processor);
+            parms.insar_processor=processor; %
+
+            if ~strcmpi(processor, 'gamma') & ~strcmpi(processor, 'doris')
+            fprintf('WARNING: This processor is not supported (doris and gamma)')
+            end
+            end
+            end
+
+            # TODO: save
