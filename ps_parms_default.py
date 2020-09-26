@@ -1,7 +1,7 @@
 import os, sys
 import numpy as np
 from datetime import datetime
-from scipy.io import loadmat
+from scipy.io import loadmat, savemat
 
 
 def ps_parms_default():
@@ -258,8 +258,6 @@ def ps_parms_default():
         if not os.path.exists(lambdaname):
             lambdaname = '..' + os.path.sep + lambdaname
         if not os.path.exists(lambdaname):
-            lambdaname = '..' + os.path.sep + lambdaname
-        if not os.path.exists(lambdaname):
             parms['lambda'] = float('nan')
         else:
             lambda1 = loadmat(lambdaname)
@@ -287,22 +285,37 @@ def ps_parms_default():
     if 'insar_processor' not in parmfields_before:
         processor_file = 'processor.txt';
         if os.path.splitext(processor_file) not in ['.m', '.mlx', '.mlapp', '.mat', '.fig', '.txt']:
-            if os.path.splitext('..'+ os.path.sep + processor_file) in ['.m', '.mlx', '.mlapp', '.mat', '.fig', '.txt']:
-                processor_file ='..' + os.path.sep + processor_file
-                if os.path.splitext('..'+ os.path.sep + processor_file) in ['.m', '.mlx', '.mlapp', '.mat', '.fig', '.txt']:
-                    processor_file ='..' + os.path.sep + processor_file
+            if os.path.splitext('..' + os.path.sep + processor_file) in ['.m', '.mlx', '.mlapp', '.mat', '.fig',
+                                                                         '.txt']:
+                processor_file = '..' + os.path.sep + processor_file
+                if os.path.splitext('..' + os.path.sep + processor_file) in ['.m', '.mlx', '.mlapp', '.mat', '.fig',
+                                                                             '.txt']:
+                    processor_file = '..' + os.path.sep + processor_file
 
-            if exist(processor_file, 'file')~=2
-            parms.insar_processor='doris'; %
-            else
-            processor = fileread(processor_file);
-            processor = strtrim(processor);
-            parms.insar_processor=processor; %
+        if os.path.splitext('..' + os.path.sep + processor_file) in ['.m', '.mlx', '.mlapp', '.mat', '.fig', '.txt']:
+            parms['insar_processor'] = 'doris'
+        else:
+            f = open(processor_file)
+            processor = str(f.read()).strip()
+            parms['insar_processor'] = processor
 
-            if ~strcmpi(processor, 'gamma') & ~strcmpi(processor, 'doris')
-            fprintf('WARNING: This processor is not supported (doris and gamma)')
-            end
-            end
-            end
+            if processor != 'gamma' and processor != 'doris':
+                print('WARNING: This processor is not supported (doris and gamma)')
 
-            # TODO: save
+    if 'subtr_tropo' not in parmfields_before:
+        parms['subtr_tropo'] = 'n'
+
+    if 'tropo_method' not in parmfields_before:
+        parms['tropo_method'] = 'a_l'
+
+    parmfields = parms.keys()
+    if len(parmfields) != num_fields:
+        try:
+            savemat(parmfile, parms)
+            for key in parmfields:
+                if key in parmfields_before:
+                    parmname = key
+                    value = parms[key]
+                    print(parmname + " = " + value)
+        except:
+            print('Warning: missing parameters could not be updated (no write access)\n')
