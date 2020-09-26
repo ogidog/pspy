@@ -1,7 +1,38 @@
 import os, sys
+import copy
 import numpy as np
 from datetime import datetime
 from scipy.io import loadmat, savemat
+
+
+def parms_value_format(value):
+    if ~isinstance(value, np.ndarray):
+        if isinstance(value, str):
+            return str.format("'{}'", value)
+        else:
+            return value
+
+
+def print_parm(parms, key):
+    if key not in parms.keys():
+        print('Parameter not found')
+        return
+
+    value = parms[key]
+    if isinstance(value, np.ndarray):
+        if value.ndim == 2 and len(value) != 0:
+            if len(value[0]) == 1:
+                print(key + ': {}'.format(parms_value_format(value[0][0])))
+            else:
+                print(key + ': {}'.format(parms_value_format(value[0])))
+
+        if value.ndim == 2 and len(value) == 0:
+            print(key + ': {}'.format(parms_value_format(value)))
+
+        if value.ndim == 1:
+            print(key + ': {}'.format(parms_value_format(value[0])))
+    else:
+        print(key + ': {}'.format(parms_value_format(value)))
 
 
 def ps_parms_default():
@@ -20,7 +51,7 @@ def ps_parms_default():
             parms['Created'] = datetime.today().strftime('%Y-%m-%d')
             parms['small_baseline_flag'] = 'n'
 
-    parmfields_before = parms.keys();
+    parmfields_before = copy.copy(list(parms.keys()))
     num_fields = len(parmfields_before);
 
     if 'max_topo_err' not in parmfields_before:
@@ -300,7 +331,7 @@ def ps_parms_default():
             parms['insar_processor'] = processor
 
             if processor != 'gamma' and processor != 'doris':
-                print('WARNING: This processor is not supported (doris and gamma)')
+                print('\nWARNING: This processor is not supported (doris and gamma)\n')
 
     if 'subtr_tropo' not in parmfields_before:
         parms['subtr_tropo'] = 'n'
@@ -308,14 +339,14 @@ def ps_parms_default():
     if 'tropo_method' not in parmfields_before:
         parms['tropo_method'] = 'a_l'
 
+    print('Set default parameters: \n')
     parmfields = parms.keys()
     if len(parmfields) != num_fields:
         try:
             savemat(parmfile, parms)
             for key in parmfields:
-                if key in parmfields_before:
+                if key not in parmfields_before:
                     parmname = key
-                    value = parms[key]
-                    print(parmname + " = " + value)
+                    print_parm(parms, key)
         except:
             print('Warning: missing parameters could not be updated (no write access)\n')
