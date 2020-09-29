@@ -2,7 +2,7 @@ import os
 import numpy as np
 
 from scipy.io import loadmat, savemat
-from utils import not_supported_param, compare_mat_file, compare_objects
+from utils import not_supported_param, compare_mat_with_number_values, compare_objects
 
 from getparm import get_parm_value as getparm
 

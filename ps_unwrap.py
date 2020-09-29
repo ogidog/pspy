@@ -5,7 +5,7 @@ from scipy.io import loadmat, savemat
 from getparm import get_parm_value as getparm
 from uw_3d import uw_3d
 
-from utils import compare_objects, not_supported_param, compare_mat_file
+from utils import compare_objects, not_supported_param, compare_mat_with_number_values
 
 
 def ps_unwrap():

@@ -5,7 +5,7 @@ from scipy.io import loadmat, savemat
 
 from getparm import get_parm_value as getparm
 from llh2local import llh2local
-from utils import compare_objects, compare_mat_file, not_supported_value, not_supported, not_supported_param
+from utils import compare_objects, compare_mat_with_number_values, not_supported_value, not_supported, not_supported_param
 
 
 def intersect(A, B):

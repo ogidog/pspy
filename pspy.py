@@ -14,9 +14,10 @@ from getparm import get_parm_value as getparm
 from setpsver import setpsver
 from utils import not_supported_param
 
+from ps_load_initial_gamma import ps_load_initial_gamma
+
 
 def main(args):
-
     quick_est_gamma_flag = getparm('quick_est_gamma_flag')[0][0]
     reest_gamma_flag = getparm('select_reest_gamma_flag')[0][0]
     unwrap_method = getparm('unwrap_method')[0][0]
@@ -131,6 +132,84 @@ def main(args):
                           '##################\n')
 
                     print('Directory is {} \n'.format(patchsplit[len(patchsplit) - 1]))
+                    if small_baseline_flag == 'y':
+                        not_supported_param('small_baseline_flag', small_baseline_flag)
+                        # try
+                        #    if strcmpi(insar_processor,'gamma') | strcmpi(insar_processor,'snap')
+                        #        sb_load_initial_gamma;
+                        #    elseif strcmpi(insar_processor,'gsar')
+                        #        sb_load_initial_gsar;
+                        #    elseif  strcmpi(insar_processor,'isce')
+                        #        if exist('data_inc','var')==0
+                        #            % already in patch dir, file contained in the InSAR dir
+                        #            inc_angle = ['..' filesep 'inc_angle.raw'];
+                        #            if exist(inc_angle,'file')~=2
+                        #                inc_angle = ['..' filesep inc_angle];
+                        #            end
+                        #            if exist(inc_angle,'file')==2
+                        #                fprintf('Found inc angle file, will load the data \n')
+                        #                data_inc = (load_isce(inc_angle));
+                        #            else
+                        #                data_inc=[];
+                        #            end
+                        #        end
+                        #        sb_load_initial_isce(data_inc)
+                        #    else
+                        #        sb_load_initial;
+                        #    end
+                        #    load('no_ps_info.mat');
+                        #    % reset as we are currently re-processing
+                        #    stamps_step_no_ps(1:end)=0;
+
+                        # %catch
+
+                        #    load('no_ps_info.mat');
+                        #    % reset as we are currently re-processing
+                        #    stamps_step_no_ps(1:end)=0;
+                        #    fprintf('***No PS points left. Updating the stamps log for this****\n')
+                        #    % update the flag indicating no PS left in step 1
+                        #    stamps_step_no_ps(1)=1;
+                        #    psver =1;
+                        #    save('psver.mat','psver')
+
+                        # end
+                        # save('no_ps_info.mat','stamps_step_no_ps')
+                    else:
+                        if insar_processor == "gamma" or insar_processor == 'snap':
+                            ps_load_initial_gamma()
+                        else:
+                            if insar_processor == 'gsar':
+                                not_supported_param('insar_processor', insar_processor)
+                                # ps_load_initial_gsar;
+                            else:
+                                if insar_processor == 'isce':
+                                    not_supported_param('insar_processor', insar_processor)
+                                    # if exist('data_inc','var')==0
+                                    #    % already in patch dir, file contained in the InSAR dir
+                                    #    inc_angle = ['..' filesep 'inc_angle.raw'];
+                                    #    if exist(inc_angle,'file')~=2
+                                    #        inc_angle = ['..' filesep inc_angle];
+                                    #    end
+                                    #    if exist(inc_angle,'file')==2
+                                    #        fprintf('Found inc angle file, will load the data \n')
+                                    #        data_inc = (load_isce(inc_angle));
+                                    #    else
+                                    #        data_inc=[];
+                                    #    end
+                                    # end
+                                    # ps_load_initial_isce(data_inc)
+                                # else
+                                #    ps_load_initial;
+                                # end
+                        no_ps_info = loadmat('no_ps_info.mat')
+                        # % reset as we are currently re-processing
+                        stamps_step_no_ps = no_ps_info['stamps_step_no_ps'].flatten()
+                        stamps_step_no_ps[0:len(stamps_step_no_ps) - 1] = 0
+                        stamps_step_no_ps = list(stamps_step_no_ps.reshape(-1, 1))
+                        savemat('no_ps_info.mat', {"stamps_step_no_ps": stamps_step_no_ps})
+
+                    if start_step <= 4:
+                        setpsver(1)
 
                 if start_step <= 5 and end_step >= 5:
                     print('Directory is {}'.format(patchsplit[len(patchsplit) - 1]))
