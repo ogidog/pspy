@@ -1,8 +1,12 @@
 import os, sys
 import numpy as np
 from datetime import datetime
+import math
 
 from readparm import readparm
+from setparm import setparm
+
+from utils import compare_mat_with_number_values, compare_objects
 
 
 def ps_load_initial_gamma(*args):
@@ -52,5 +56,47 @@ def ps_load_initial_gamma(*args):
         master_master_flag = '1'  # yes, null master-master ifg provided
 
     heading = float(readparm(rslcpar, 'heading:'))
-    
-    print()
+    setparm("heading", heading)
+
+    freq = float(readparm(rslcpar, 'radar_frequency:'))
+    lambda1 = 299792458 / freq
+    setparm('lambda', lambda1)
+
+    sensor = readparm(rslcpar, 'sensor:')
+    if 'ASAR' in sensor:
+        platform = 'ENVISAT'
+    else:
+        platform = sensor  # S1A for Sentinel-1A
+    setparm('platform', platform)
+
+    f = open(ijname)
+    lines = f.readlines()
+    f.close()
+    ij = np.empty((0, 3), int)
+    for line in lines:
+        line = line.strip()
+        ij = np.append(ij, np.array([line.split(" ")]).astype("int"), axis=0)
+    n_ps = np.size(ij, 0)
+
+    rps = int(readparm(rslcpar, 'range_pixel_spacing'))
+    rgn = float(readparm(rslcpar, 'near_range_slc'))
+    se = float(readparm(rslcpar, 'sar_to_earth_center'))
+    re = float(readparm(rslcpar, 'earth_radius_below_sensor'))
+    rgc = float(readparm(rslcpar, 'center_range_slc'))
+    naz = int(readparm(rslcpar, 'azimuth_lines'))
+    prf = float(readparm(rslcpar, 'prf'))
+
+    mean_az = naz / 2 - 0.5  # mean azimuth line
+
+    rg = rgn + ij[:, 2] * rps
+    look = np.arccos(
+        (se ** 2 + rg.reshape(-1, 1) ** 2 - re ** 2) / (2 * se * rg.reshape(-1, 1)))  # Satellite look angles
+
+    bperp_mat = np.zeros((n_ps, n_image))
+    for i in range(n_ifg):
+        basename = ifgs[i].replace(".diff", ".base")
+        B_TCN = readparm(basename, 'initial_baseline(TCN):', 3)
+        BR_TCN = readparm(basename, 'initial_baseline_rate:', 3)
+
+    # diff = compare_objects(look, 'look')
+    pass

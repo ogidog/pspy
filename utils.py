@@ -20,7 +20,7 @@ def not_supported_value(var, value):
 
 
 def compare_objects(obj, obj_name):
-    obj_matlab = loadmat('F:\\Temp\\' + obj_name + '.mat')[obj_name]
+    obj_matlab = loadmat('D:\\Temp\\stamps\\' + obj_name + '.mat')[obj_name]
     obj_py = obj
 
     obj_matlab[np.isnan(obj_matlab)] = 9999999
@@ -36,7 +36,7 @@ def compare_objects(obj, obj_name):
 
 
 def compare_complex_objects(obj, obj_name):
-    obj_matlab = loadmat('F:\\Temp\\' + obj_name + '.mat')[obj_name]
+    obj_matlab = loadmat('D:\\Temp\\stamps\\' + obj_name + '.mat')[obj_name]
     obj_py = obj
 
     diff = obj_matlab - obj_py

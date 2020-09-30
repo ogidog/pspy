@@ -6,6 +6,8 @@ def readparm(*args):
 
     if len(args) < 3:
         numval = 1
+    else:
+        numval = args[2]
 
     if len(args) < 4:
         log_flag = 1
@@ -18,9 +20,16 @@ def readparm(*args):
 
     for parm_line in parm_lines:
         if parm in parm_line:
-            value = parm_line.split("\t")[1]
-            if log_flag == 1:
-                print(parm + "=" + value)
+            if numval == 1:
+                value = parm_line.split("\t")[1]
+                value = value.strip()
+                if log_flag == 1:
+                    print(parm + "=" + value)
+            if numval > 1:
+                value = parm_line.split("\t")[1:numval + 1]
+                value = np.array(list(map(str.strip, value)))
+                if log_flag == 1:
+                    print(parm + "=" + " ".join(value))
             break
 
     return value
