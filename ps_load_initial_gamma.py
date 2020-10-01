@@ -95,8 +95,20 @@ def ps_load_initial_gamma(*args):
     bperp_mat = np.zeros((n_ps, n_image))
     for i in range(n_ifg):
         basename = ifgs[i].replace(".diff", ".base")
-        B_TCN = readparm(basename, 'initial_baseline(TCN):', 3)
-        BR_TCN = readparm(basename, 'initial_baseline_rate:', 3)
+        B_TCN = readparm(basename, 'initial_baseline(TCN):', 3).astype("float")
+        BR_TCN = readparm(basename, 'initial_baseline_rate:', 3).astype("float")
+        bc = B_TCN[1] + BR_TCN[1] * (ij[:, 1] - mean_az) / prf
+        bn = B_TCN[2] + BR_TCN[2] * (ij[:, 1] - mean_az) / prf
+        bperp_mat[:, i] = (bc.reshape(-1, 1) * np.cos(look) - bn.reshape(-1, 1) * np.sin(look)).flatten()
+        # bpara=bc*sin(look)+bn*cos(look)
 
-    # diff = compare_objects(look, 'look')
+    bperp = np.mean(bperp_mat, axis=0).reshape(-1, 1)
+    if master_master_flag == 1:
+        bperp_mat = np.concatenate((bperp_mat[:, 0:master_ix - 1], bperp_mat[:, master_ix:]), axis=1)
+    else:
+        bperp = np.concatenate((bperp[0:master_ix - 1], np.array([[0]]), bperp[master_ix - 1:]), axis=0)
+    # bperp=[bperp(1:master_ix-1);0;bperp(master_ix:end)]; % insert master-master bperp (zero)
+    # bperp_mat=repmat(single(bperp([1:master_ix-1,master_ix+1:end]))',n_ps,1);
+
+    # diff = compare_objects(bperp, 'bperp')
     pass
