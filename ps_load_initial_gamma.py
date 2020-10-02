@@ -1,12 +1,12 @@
 import os, sys
 import numpy as np
 from datetime import datetime
-import math
+import struct
 
 from readparm import readparm
 from setparm import setparm
 
-from utils import compare_mat_with_number_values, compare_objects
+from utils import compare_mat_with_number_values, compare_objects, compare_complex_objects
 
 
 def ps_load_initial_gamma(*args):
@@ -110,5 +110,22 @@ def ps_load_initial_gamma(*args):
     # bperp=[bperp(1:master_ix-1);0;bperp(master_ix:end)]; % insert master-master bperp (zero)
     # bperp_mat=repmat(single(bperp([1:master_ix-1,master_ix+1:end]))',n_ps,1);
 
-    # diff = compare_objects(bperp, 'bperp')
+    inci = np.arccos((se ** 2 - re ** 2 - rg ** 2) / (2 * re * rg))
+    mean_incidence = np.mean(inci)
+    mean_range = rgc
+
+    f = open(phname, 'rb')
+    ph = np.zeros((n_ps, n_ifg)).astype("complex")
+    byte_count = n_ps * 8
+    for j in range(n_ifg):
+        binary_data = f.read(byte_count)
+        for i in range(n_ps):
+            a = struct.unpack_from(">f", binary_data, offset=i * 8)  # struct.unpack(">f", binary_data[4 * i:4 * i + 4])
+            b = struct.unpack_from(">f", binary_data, offset=8 * i + 4)  # struct.unpack(">f", binary_data[4 * i + 4:4 * i + 8])
+            ph[i, j] = a[0] + 1j * b[0]
+
+    f.close()
+
+    #diff = compare_objects(inci.reshape(-1, 1), 'inci')
+    #diff = compare_complex_objects(ph, 'ph')
     pass
