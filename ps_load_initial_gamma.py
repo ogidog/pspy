@@ -121,11 +121,15 @@ def ps_load_initial_gamma(*args):
         binary_data = f.read(byte_count)
         for i in range(n_ps):
             a = struct.unpack_from(">f", binary_data, offset=i * 8)  # struct.unpack(">f", binary_data[4 * i:4 * i + 4])
-            b = struct.unpack_from(">f", binary_data, offset=8 * i + 4)  # struct.unpack(">f", binary_data[4 * i + 4:4 * i + 8])
+            b = struct.unpack_from(">f", binary_data,
+                                   offset=8 * i + 4)  # struct.unpack(">f", binary_data[4 * i + 4:4 * i + 8])
             ph[i, j] = a[0] + 1j * b[0]
 
     f.close()
 
-    #diff = compare_objects(inci.reshape(-1, 1), 'inci')
-    #diff = compare_complex_objects(ph, 'ph')
+    zero_ph = np.sum(ph == 0, axis=1).reshape(-1, 1)
+    nonzero_ix=zero_ph<=1 #if more than 1 phase is zero, drop node
+
+    # diff = compare_objects(inci.reshape(-1, 1), 'inci')
+    # diff = compare_complex_objects(ph, 'ph')
     pass
