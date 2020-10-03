@@ -3,6 +3,7 @@ import numpy as np
 from datetime import datetime
 import struct
 
+from llh2local import llh2local
 from readparm import readparm
 from setparm import setparm
 
@@ -120,16 +121,36 @@ def ps_load_initial_gamma(*args):
     for j in range(n_ifg):
         binary_data = f.read(byte_count)
         for i in range(n_ps):
-            a = struct.unpack_from(">f", binary_data, offset=i * 8)  # struct.unpack(">f", binary_data[4 * i:4 * i + 4])
-            b = struct.unpack_from(">f", binary_data,
-                                   offset=8 * i + 4)  # struct.unpack(">f", binary_data[4 * i + 4:4 * i + 8])
+            a = struct.unpack_from(">f", binary_data, offset=i * 8)
+            b = struct.unpack_from(">f", binary_data, offset=8 * i + 4)
             ph[i, j] = a[0] + 1j * b[0]
 
     f.close()
 
     zero_ph = np.sum(ph == 0, axis=1).reshape(-1, 1)
-    nonzero_ix=zero_ph<=1 #if more than 1 phase is zero, drop node
+    nonzero_ix = zero_ph <= 1  # if more than 1 phase is zero, drop node
+    if master_master_flag == 1:
+        ph[:, master_ix - 1] = 1
+    else:
+        ph = np.concatenate((ph[:, 0: master_ix - 1], np.ones(n_ps).reshape(-1, 1), ph[:, master_ix - 1:]), axis=1)
+        n_ifg = n_ifg + 1
+        n_image = n_image + 1
 
-    # diff = compare_objects(inci.reshape(-1, 1), 'inci')
+    if os.path.exists(llname):
+        f = open(llname, 'rb')
+        binary_data = f.read()
+        lonlat = np.zeros((n_ps, 2)).astype("float")
+        for i in range(n_ps):
+            lonlat[i, 0] = struct.unpack_from(">f", binary_data, offset=8 * i)[0]
+            lonlat[i, 1] = struct.unpack_from(">f", binary_data, offset=8 * i + 4)[0]
+        f.close()
+    else:
+        print('File {} does not exist'.format(llname))
+        sys.exit()
+
+    ll0 = (np.amax(lonlat, axis=0) + np.amin(lonlat, axis=0)) / 2
+    xy = llh2local(lonlat.T, ll0).T * 1000
+
+    diff = compare_objects(xy, 'xy')
     # diff = compare_complex_objects(ph, 'ph')
     pass
