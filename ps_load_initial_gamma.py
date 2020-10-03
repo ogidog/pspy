@@ -151,6 +151,11 @@ def ps_load_initial_gamma(*args):
     ll0 = (np.amax(lonlat, axis=0) + np.amin(lonlat, axis=0)) / 2
     xy = llh2local(lonlat.T, ll0).T * 1000
 
-    diff = compare_objects(xy, 'xy')
+    sort_x = xy[np.argsort(xy[:, 0], kind="stable")]
+    sort_y = xy[np.argsort(xy[:, 1], kind="stable")]
+    n_pc = int(np.round(n_ps * 0.001))
+
+    diff = compare_objects(sort_y, 'sort_y')
+    # diff = compare_objects(sort_x, 'sort_x')
     # diff = compare_complex_objects(ph, 'ph')
     pass
