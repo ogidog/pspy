@@ -154,8 +154,29 @@ def ps_load_initial_gamma(*args):
     sort_x = xy[np.argsort(xy[:, 0], kind="stable")]
     sort_y = xy[np.argsort(xy[:, 1], kind="stable")]
     n_pc = int(np.round(n_ps * 0.001))
+    bl = np.mean(sort_x[0:n_pc, :], axis=0)  # bottom left corner
+    tr = np.mean(sort_x[-(n_pc + 1):, :], axis=0)  # top right corner
+    br = np.mean(sort_y[0:n_pc, :], axis=0)  # bottom right  corner
+    tl = np.mean(sort_y[-(n_pc + 1):, :], axis=0)  # top left corner
 
-    diff = compare_objects(sort_y, 'sort_y')
-    # diff = compare_objects(sort_x, 'sort_x')
+    theta = (180 - heading) * np.pi / 180
+    if theta > np.pi:
+        theta = theta - 2 * np.pi
+
+    rotm = np.array([[np.cos(theta), np.sin(theta)], [-np.sin(theta), np.cos(theta)]])
+    xy = xy.T
+    xynew = rotm.dot(xy)  # rotate so that scene axes approx align with x=0 and y=0
+    if (np.max(xynew[0, :]) - np.min(xynew[0, :]) < np.max(xy[0, :]) - np.min(xy[0, :])) and (
+            np.max(xynew[1, :]) - np.min(xynew[1, :]) < np.max(xy[1, :]) - np.min(xy[1, :])):
+        xy = xynew  # check that rotation is an improvement
+        print("Rotating by {}  degrees", str(theta * 180 / np.pi))
+
+    xy = xy.T
+
+    #sort_ix = np.array(sorted(range(len(xy)), key=lambda s: (xy[s][1], xy[s][0])))
+    #sort_ix_1= np.argsort(xy[:, 1], kind="stable")  # sort in ascending y order
+    compare_objects(xy,"xy")
+
+    #diff = compare_objects(sort_ix.reshape(-1,1)+1, 'sort_ix')
     # diff = compare_complex_objects(ph, 'ph')
     pass
