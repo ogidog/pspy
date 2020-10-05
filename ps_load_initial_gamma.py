@@ -171,12 +171,11 @@ def ps_load_initial_gamma(*args):
         xy = xynew  # check that rotation is an improvement
         print("Rotating by {}  degrees", str(theta * 180 / np.pi))
 
-    xy = xy.T
+    xy = xy.T.astype("float32")
+    sort_ix = np.array(sorted(range(len(xy)), key=lambda s: (xy[s][1], xy[s][0])))
+    xy = xy[sort_ix, :]
+    xy = np.concatenate((np.array([*range(n_ps)]).reshape(-1, 1) + 1, xy), axis=1)
 
-    #sort_ix = np.array(sorted(range(len(xy)), key=lambda s: (xy[s][1], xy[s][0])))
-    #sort_ix_1= np.argsort(xy[:, 1], kind="stable")  # sort in ascending y order
-    compare_objects(xy,"xy")
-
-    #diff = compare_objects(sort_ix.reshape(-1,1)+1, 'sort_ix')
+    # diff = compare_objects(sort_ix.reshape(-1,1)+1, 'sort_ix')
     # diff = compare_complex_objects(ph, 'ph')
     pass
