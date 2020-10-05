@@ -219,14 +219,43 @@ def ps_load_initial_gamma(*args):
     savemat(lasavename, {"la": la.reshape(-1, 1)})
 
     if os.path.exists(daname):
-        f=open()
-        D_A = loadmat(daname)
+        f = open(daname)
+        D_A = f.readlines()
+        f.close()
+        D_A = np.array([str.strip(d_a) for d_a in D_A]).astype("float32").reshape(-1, 1)
         D_A = D_A[sort_ix]
         dasavename = 'da' + str(psver) + ".mat"
         # save(dasavename,'D_A');
         savemat(dasavename, {"D_A": D_A})
 
-    # diff=compare_mat_with_number_values("psver.mat")
+    if os.path.exists(hgtname):
+        f = open(hgtname, 'rb')
+        binary_data = f.read()
+        f.close()
+        hgt = np.zeros(n_ps)
+        for i in range(n_ps):
+            hgt[i] = struct.unpack_from(">f", binary_data, offset=4 * i)[0]
+        hgt = hgt.reshape(-1, 1)
+        hgt = hgt[sort_ix]
+        hgtsavename = 'hgt' + str(psver) + ".mat"
+        # save(hgtsavename,'hgt');
+        savemat(hgtsavename, {"hgt": hgt})
+
+    # diff = compare_mat_with_number_values("ps1.mat",
+    #                                      "D:\\Temp\\test1\\123456789124\\stampsexport\\" + os.getcwd()[-7:]+"\\")
+    # diff = compare_mat_with_number_values("psver.mat",
+    #                                      "D:\\Temp\\test1\\123456789124\\stampsexport\\" + os.getcwd()[-7:]+"\\")
+    # diff = compare_mat_with_number_values("ph1.mat",
+    #                                      "D:\\Temp\\test1\\123456789124\\stampsexport\\" + os.getcwd()[-7:]+"\\")
+    # diff = compare_mat_with_number_values("bp1.mat",
+    #                                      "D:\\Temp\\test1\\123456789124\\stampsexport\\" + os.getcwd()[-7:]+"\\")
+    # diff = compare_mat_with_number_values("la1.mat",
+    #                                      "D:\\Temp\\test1\\123456789124\\stampsexport\\" + os.getcwd()[-7:]+"\\")
+    # diff = compare_mat_with_number_values("da1.mat",
+    #                                      "D:\\Temp\\test1\\123456789124\\stampsexport\\" + os.getcwd()[-7:]+"\\")
+    # diff = compare_mat_with_number_values("hgt1.mat",
+    #                                      "D:\\Temp\\test1\\123456789124\\stampsexport\\" + os.getcwd()[-7:]+"\\")
+
     # diff = compare_objects(sort_ix.reshape(-1,1)+1, 'sort_ix')
     # diff = compare_complex_objects(ph, 'ph')
-    pass
+    # pass

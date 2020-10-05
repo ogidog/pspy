@@ -49,8 +49,8 @@ def compare_complex_objects(obj, obj_name):
     return diff
 
 
-def compare_mat_with_number_values(file_name, *excluded_keys):
-    mat_matlab = loadmat('D:\\Temp\\stamps\\' + file_name)
+def compare_mat_with_number_values(file_name, matlab_path="D:\\Temp\\stamps\\", *excluded_keys):
+    mat_matlab = loadmat(matlab_path + file_name)
     mat_py = loadmat(file_name)
 
     keys_matlab = mat_matlab.keys()
@@ -87,31 +87,32 @@ def compare_mat_misc_values(file_name, *excluded_keys):
 
     for key in mat_matlab.keys():
         if '__' not in key and key != "Created":
-                mat_matlab_value = mat_matlab[key]
-                mat_py_value = mat_py[key]
+            mat_matlab_value = mat_matlab[key]
+            mat_py_value = mat_py[key]
 
-                if (len(mat_matlab_value) == 0 and len(mat_py_value) == 0):
-                    continue
+            if (len(mat_matlab_value) == 0 and len(mat_py_value) == 0):
+                continue
 
-                if np.size(mat_matlab_value) > 1:
-                    for i in range(len(mat_matlab_value[0])):
-                        if mat_matlab_value[0][i] != mat_py_value[0][i]:
-                            print("Diff key: " + key + " = " + mat_matlab_value[0])
-                            continue
+            if np.size(mat_matlab_value) > 1:
+                for i in range(len(mat_matlab_value[0])):
+                    if mat_matlab_value[0][i] != mat_py_value[0][i]:
+                        print("Diff key: " + key + " = " + mat_matlab_value[0])
+                        continue
 
-                if np.size(mat_matlab_value) == 1:
+            if np.size(mat_matlab_value) == 1:
 
-                    if isinstance(mat_matlab_value[0], str):
-                        if mat_matlab_value[0] != mat_py_value[0]:
-                            print("Diff key: " + key + " = " + mat_matlab_value[0])
-                            continue
-                    else:
-                        if np.isnan(mat_matlab_value[0][0]) and np.isnan(mat_py_value[0][0]):
-                            continue
+                if isinstance(mat_matlab_value[0], str):
+                    if mat_matlab_value[0] != mat_py_value[0]:
+                        print("Diff key: " + key + " = " + mat_matlab_value[0])
+                        continue
+                else:
+                    if np.isnan(mat_matlab_value[0][0]) and np.isnan(mat_py_value[0][0]):
+                        continue
 
-                        if mat_matlab_value[0][0] != mat_py_value[0][0]:
-                            print("Diff key: " + key + " = " + mat_matlab_value[0][0])
-                            continue
+                    if mat_matlab_value[0][0] != mat_py_value[0][0]:
+                        print("Diff key: " + key + " = " + mat_matlab_value[0][0])
+                        continue
+
 
 def main(args):
     # diff = compare_mat_with_list_values('parms.mat')
