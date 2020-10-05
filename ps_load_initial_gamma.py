@@ -175,6 +175,11 @@ def ps_load_initial_gamma(*args):
     sort_ix = np.array(sorted(range(len(xy)), key=lambda s: (xy[s][1], xy[s][0])))
     xy = xy[sort_ix, :]
     xy = np.concatenate((np.array([*range(n_ps)]).reshape(-1, 1) + 1, xy), axis=1)
+    xy[:, 1:2] = np.round(xy[:, 1:2] * 1000) / 1000  # round to mm
+
+    ph = ph[sort_ix, :]
+    ij = ij[sort_ix, :]
+    ij[:, 0]=1: n_ps
 
     # diff = compare_objects(sort_ix.reshape(-1,1)+1, 'sort_ix')
     # diff = compare_complex_objects(ph, 'ph')
