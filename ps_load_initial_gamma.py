@@ -2,6 +2,7 @@ import os, sys
 import numpy as np
 from datetime import datetime
 import struct
+from scipy.io import savemat, loadmat
 
 from llh2local import llh2local
 from readparm import readparm
@@ -46,8 +47,7 @@ def ps_load_initial_gamma(*args):
     n_image = n_ifg
 
     day = [(datetime.strptime(str(os.path.split(ifg)[1].split("_")[1].replace(".diff", "")),
-                              "%Y%m%d")).date().toordinal() + 366
-           for ifg in ifgs]
+                              "%Y%m%d")).date().toordinal() + 366 for ifg in ifgs]
 
     master_ix = len(np.where(np.array(day) < master_day)[0]) + 1
     if day[master_ix] != master_day:
@@ -179,8 +179,54 @@ def ps_load_initial_gamma(*args):
 
     ph = ph[sort_ix, :]
     ij = ij[sort_ix, :]
-    ij[:, 0]=1: n_ps
+    ij[:, 0] = np.array([*range(n_ps)]) + 1
+    lonlat = lonlat[sort_ix, :]
+    bperp_mat = bperp_mat[sort_ix, :]
 
+    savename = "ps" + str(psver) + ".mat"
+    ps_dict = {
+        "ij": ij,
+        "lonlat": lonlat,
+        "xy": xy,
+        "bperp": bperp,
+        "day": np.array(day).reshape(-1, 1),
+        "master_day": master_day,
+        "master_ix": master_ix,
+        "n_ifg": n_ifg,
+        "n_image": n_image,
+        "n_ps": n_ps,
+        "sort_ix": sort_ix,
+        "ll0": ll0,
+        "mean_incidence": mean_incidence,
+        "mean_range": mean_range
+
+    }
+    savemat(savename, ps_dict)
+
+    savemat("psver.mat", {"psver": psver})
+
+    phsavename = 'ph' + str(psver) + ".mat"
+    # save(phsavename,'ph');
+    savemat(phsavename, {"ph": ph})
+
+    bpsavename = 'bp' + str(psver) + ".mat"
+    # save(bpsavename,'bperp_mat');
+    savemat(bpsavename, {"bperp_mat": bperp_mat})
+
+    lasavename = 'la' + str(psver) + ".mat"
+    la = inci[sort_ix]  # store incidence not look angle for gamma
+    # save(lasavename,'la');
+    savemat(lasavename, {"la": la.reshape(-1, 1)})
+
+    if os.path.exists(daname):
+        f=open()
+        D_A = loadmat(daname)
+        D_A = D_A[sort_ix]
+        dasavename = 'da' + str(psver) + ".mat"
+        # save(dasavename,'D_A');
+        savemat(dasavename, {"D_A": D_A})
+
+    # diff=compare_mat_with_number_values("psver.mat")
     # diff = compare_objects(sort_ix.reshape(-1,1)+1, 'sort_ix')
     # diff = compare_complex_objects(ph, 'ph')
     pass
