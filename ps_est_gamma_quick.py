@@ -1,5 +1,10 @@
 import numpy as np
+import os
+from numpy.fft import fftshift
+from scipy.io import loadmat
+
 from getparm import get_parm_value as getparm
+from utils import compare_objects
 
 
 def ps_est_gamma_quick(*args):
@@ -29,10 +34,38 @@ def ps_est_gamma_quick(*args):
         low_coh_thresh = 31  # equivalent to coh of 31/100
 
     freq0 = 1 / low_pass_wavelength
-    if (int(1 / grid_size / n_win) == 0 or int((n_win - 2) / grid_size / n_win / 2) == 0):
-        freq0 = np.array([])
+    freq_i = np.arange(-(n_win) / grid_size / n_win / 2, (n_win - 1) / grid_size / n_win / 2,
+                       1 / grid_size / n_win)
+    butter_i = np.array(1 / (1 + (freq_i / freq0) ** (2 * 5)))
+    low_pass = butter_i.reshape(-1, 1) * butter_i
+    low_pass = fftshift(low_pass)
+
+    psver = loadmat("psver.mat")["psver"][0][0]
+    psname = "ps" + str(psver) + ".mat"
+    phname = 'ph' + str(psver) + ".mat"
+    bpname = 'bp' + str(psver) + ".mat"
+    laname = 'la' + str(psver) + ".mat"
+    incname = 'inc' + str(psver) + ".mat"
+    pmname = 'pm' + str(psver) + ".mat"
+    daname = 'da' + str(psver) + ".mat"
+
+    ps = loadmat(psname)
+    bp = loadmat(bpname)
+
+    if os.path.exists(daname):
+        da = loadmat(daname)
+        D_A = da["D_A"]
+        da.clear()
     else:
-        freq_i = np.arange(int(-(n_win) / grid_size / n_win / 2), int((n_win - 2) / grid_size / n_win / 2),
-                           int(1 / grid_size / n_win))
+        D_A = np.ones((ps['n_ps'][0][0], 1))
+
+    if os.path.exists(phname):
+        phin = loadmat(phname)
+        ph = phin["ph"]
+        phin.clear()
+    else:
+        ph = ps["ph"]
+
+    # diff = compare_objects(np.array([butter_i]), 'butter_i')
 
     return []
