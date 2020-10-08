@@ -5,6 +5,7 @@ from scipy.io import savemat, loadmat
 
 from ps_calc_ifg_std import ps_calc_ifg_std
 from ps_correct_phase import ps_correct_phase
+from ps_est_gamma_quick import ps_est_gamma_quick
 from ps_merge_patches import ps_merge_patches
 from ps_parms_default import ps_parms_default
 from ps_unwrap import ps_unwrap
@@ -210,6 +211,30 @@ def main(args):
 
                     if start_step <= 4:
                         setpsver(1)
+
+                if start_step <= 2 and end_step >= 2:
+                    print('\n##################\n' +
+                          '##### Step 2 #####\n' +
+                          '##################\n')
+
+                    print('Directory is {} \n'.format(patchsplit[len(patchsplit) - 1]))
+
+                    # check if step 1 had more than 0 PS points
+                    stamps_step_no_ps = loadmat("no_ps_info.mat")["stamps_step_no_ps"]
+                    # reset as we are currently re-processing
+                    stamps_step_no_ps[1:] = 0
+
+                    # run step 2 when there are PS left in step 1
+                    if stamps_step_no_ps[1] == 0:
+                        if quick_est_gamma_flag == "y":
+                            ps_est_gamma_quick(est_gamma_parm)
+                        else:
+                            not_supported_param(quick_est_gamma_flag, quick_est_gamma_flag)
+                            # ps_est_gamma(est_gamma_parm);
+                    else:
+                        stamps_step_no_ps[1] = 1
+                        print('No PS left in step 1, so will skip step 2 \n')
+                    savemat('no_ps_info.mat', {"stamps_step_no_ps": stamps_step_no_ps})
 
                 if start_step <= 5 and end_step >= 5:
                     print('Directory is {}'.format(patchsplit[len(patchsplit) - 1]))
