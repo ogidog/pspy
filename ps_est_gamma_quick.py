@@ -4,7 +4,7 @@ from numpy.fft import fftshift
 from scipy.io import loadmat
 
 from getparm import get_parm_value as getparm
-from utils import compare_objects
+from utils import compare_objects, not_supported_param
 
 
 def ps_est_gamma_quick(*args):
@@ -66,6 +66,27 @@ def ps_est_gamma_quick(*args):
     else:
         ph = ps["ph"]
 
-    # diff = compare_objects(np.array([butter_i]), 'butter_i')
+    null_i = np.where(ph.T == 0)[1]
+    null_i = np.unique(null_i)
+    good_ix = np.ones((ps["n_ps"][0][0], 1))
+    good_ix[null_i] = 0
+    good_ix = good_ix.astype("bool")
+
+    if small_baseline_flag == 'y':
+        not_supported_param("small_baseline_flag", small_baseline_flag)
+        # bperp=ps.bperp;
+        # n_ifg=ps.n_ifg;
+        # n_image=ps.n_image;
+        # n_ps=ps.n_ps;
+        # ifgday_ix=ps.ifgday_ix;
+        # xy=ps.xy;
+    else:
+        ph = np.delete(ph, ps["master_ix"][0][0] - 1, axis=1)
+        bperp = np.delete(ps["bperp"], ps["master_ix"][0][0] - 1, axis=0)
+        # n_ifg = ps.n_ifg - 1;
+        # n_ps = ps.n_ps;
+        # xy = ps.xy;
+
+    # diff = compare_objects(good_ix, 'good_ix')
 
     return []
