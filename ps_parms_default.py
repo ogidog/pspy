@@ -339,9 +339,9 @@ def ps_parms_default():
     if 'tropo_method' not in parmfields_before:
         parms['tropo_method'] = 'a_l'
 
-    print('Set default parameters: \n')
     parmfields = parms.keys()
     if len(parmfields) != num_fields:
+        print('Set default parameters: \n')
         try:
             savemat(parmfile, parms)
             for key in parmfields:

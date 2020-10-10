@@ -4,7 +4,7 @@ from numpy.fft import fftshift
 from scipy.io import loadmat
 
 from getparm import get_parm_value as getparm
-from utils import compare_objects, not_supported_param
+from utils import compare_objects, not_supported_param, not_supported
 
 
 def ps_est_gamma_quick(*args):
@@ -12,6 +12,8 @@ def ps_est_gamma_quick(*args):
 
     if len(args) < 1:
         restart_flag = 0
+    else:
+        restart_flag = args[0]
 
     rho = 830000  # mean range - need only be approximately correct
     n_rand = 300000  # number of simulated random phase pixels
@@ -83,9 +85,67 @@ def ps_est_gamma_quick(*args):
     else:
         ph = np.delete(ph, ps["master_ix"][0][0] - 1, axis=1)
         bperp = np.delete(ps["bperp"], ps["master_ix"][0][0] - 1, axis=0)
-        # n_ifg = ps.n_ifg - 1;
-        # n_ps = ps.n_ps;
-        # xy = ps.xy;
+        n_ifg = ps["n_ifg"][0][0] - 1
+        n_ps = ps["n_ps"][0][0]
+        xy = ps["xy"]
+    ps.clear()
+
+    A = np.abs(ph)
+    # A = A.astype("float32")
+    A[A == 0] = 1  # avoid divide by zero
+    ph = ph / A
+
+    ### ===============================================
+    ### The code below needs to be made sensor specific
+    ### ===============================================
+    if os.path.exists(incname):
+        not_supported()
+        # print('Found inc angle file \n')
+        # inc = loadmat(incname)
+        # inc_mean = np.mean(inc["inc"][inc["inc"] != 0])
+        # inc.clear()
+    else:
+        if os.path.exists(laname):
+            print('Found look angle file \n')
+            la = loadmat(laname)
+            inc_mean = np.mean(la["la"]) + 0.052  # incidence angle approx equals look angle + 3 deg
+            la.clear()
+        else:
+            inc_mean = 21 * np.pi / 180  # guess the incidence angle
+    max_K = max_topo_err / (lambda1 * rho * np.sin(inc_mean) / 4 / np.pi)
+    ### ===============================================
+    ### The code below needs to be made sensor specific
+    ### ===============================================
+
+    bperp_range = np.max(bperp) - np.min(bperp)
+    n_trial_wraps = (bperp_range * max_K / (2 * np.pi))
+    print('n_trial_wraps = {}'.format(n_trial_wraps))
+
+    if restart_flag > 0:
+        not_supported()
+        # %disp(['Restarting: iteration #',num2str(i_loop),' step_number=',num2str(step_number)])
+        # logit('Restarting previous run...')
+        # load(pmname)
+        # weighting_save=weighting;
+        # if ~exist('gamma_change_save','var')
+        #    gamma_change_save=1;
+        # end
+    else:
+        print('Initialising random distribution...')
+        #random.seed(a=2005,version=2)
+
+        np.random.seed(2005)  # determine distribution for random phase
+
+        if small_baseline_flag == "y":
+            not_supported_param("small_baseline_flag", small_baseline_flag)
+            # rand_image=2*pi*rand(n_rand,n_image);
+            # rand_ifg=zeros(n_rand,n_ifg);
+            # for i=1:n_ifg
+            # rand_ifg(:, i)=rand_image(:, ifgday_ix(i, 2))-rand_image(:, ifgday_ix(i, 1));
+            # end
+            # clear rand_image
+        else:
+            rand_ifg = 2 * np.pi * np.random.rand(n_rand, n_ifg)
 
     # diff = compare_objects(good_ix, 'good_ix')
 
