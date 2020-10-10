@@ -1,10 +1,12 @@
 import numpy as np
 import os
+import random
 from numpy.fft import fftshift
 from scipy.io import loadmat
 
 from getparm import get_parm_value as getparm
 from utils import compare_objects, not_supported_param, not_supported
+from ps_topofit import ps_topofit
 
 
 def ps_est_gamma_quick(*args):
@@ -132,9 +134,6 @@ def ps_est_gamma_quick(*args):
         # end
     else:
         print('Initialising random distribution...')
-        #random.seed(a=2005,version=2)
-
-        np.random.seed(2005)  # determine distribution for random phase
 
         if small_baseline_flag == "y":
             not_supported_param("small_baseline_flag", small_baseline_flag)
@@ -145,8 +144,16 @@ def ps_est_gamma_quick(*args):
             # end
             # clear rand_image
         else:
-            rand_ifg = 2 * np.pi * np.random.rand(n_rand, n_ifg)
+            # TODO: только для тестов, убрать!!!!
+            rand_ifg = loadmat("..\\..\\rand_ifg.mat")["rand_ifg"]
+            # TODO: раскоментить это
+            # np.random.seed(seed=2005)  # determine distribution for random phase
+            # rand_ifg = 2 * np.pi * np.random.rand(n_rand, n_ifg)
+        coh_rand = np.zeros(n_rand)
+        for i in np.arange(n_rand - 1, 0, -1):
+            K_r, C_r, coh_r = ps_topofit(np.exp(1j * rand_ifg[i, :]), bperp, n_trial_wraps, 'n')
+            coh_rand[i] = coh_r[0]
 
-    # diff = compare_objects(good_ix, 'good_ix')
+        # diff = compare_objects(good_ix, 'good_ix')
 
     return []
