@@ -2,7 +2,7 @@ import numpy as np
 import os
 import random
 from numpy.fft import fftshift
-from scipy.io import loadmat
+from scipy.io import loadmat, savemat
 
 from getparm import get_parm_value as getparm
 from utils import compare_objects, not_supported_param, not_supported
@@ -149,11 +149,21 @@ def ps_est_gamma_quick(*args):
             # TODO: раскоментить это
             # np.random.seed(seed=2005)  # determine distribution for random phase
             # rand_ifg = 2 * np.pi * np.random.rand(n_rand, n_ifg)
-        coh_rand = np.zeros(n_rand)
-        for i in np.arange(n_rand - 1, 0, -1):
-            K_r, C_r, coh_r = ps_topofit(np.exp(1j * rand_ifg[i, :]), bperp, n_trial_wraps, 'n')
-            coh_rand[i] = coh_r[0]
 
-        # diff = compare_objects(good_ix, 'good_ix')
+        # TODO: убрать if - это для быстрой отладки
+        if os.path.exists("coh_rand.mat"):
+            coh_rand = loadmat("coh_rand.mat")["coh_rand"][0]
+        else:
+            coh_rand = np.zeros(n_rand)
+            for i in np.arange(n_rand - 1, -1, -1):
+                K_r, C_r, coh_r, phase_residual = ps_topofit(np.exp(1j * rand_ifg[i, :]), bperp, n_trial_wraps, 'n')
+                coh_rand[i] = coh_r
+
+            # TODO: убрать, Это только для быстрой отладки!!!
+            savemat("coh_rand.mat", {"coh_rand": coh_rand})
+
+        rand_ifg = []
+
+        # diff = compare_objects(coh_rand, 'coh_rand')
 
     return []
