@@ -1,5 +1,6 @@
 import numpy as np
 import os
+from matplotlib.pyplot import hist
 import random
 from numpy.fft import fftshift
 from scipy.io import loadmat, savemat
@@ -163,6 +164,17 @@ def ps_est_gamma_quick(*args):
             savemat("coh_rand.mat", {"coh_rand": coh_rand})
 
         rand_ifg = []
+        coh_bins = np.arange(0.005, 1.01, 0.01)
+        step = 0.01 / 2
+        Nr = np.histogram(coh_rand, coh_bins - step)[0]  # distribution of random phase points
+        Nr[0] += len(coh_rand[coh_rand < step])
+        i = len(Nr) - 1
+        while Nr[i] == 0:
+            i = i - 1
+        Nr_max_nz_ix = i
+
+        step_number = 1
+        K_ps = np.zeros((n_ps, 1))
 
         # diff = compare_objects(coh_rand, 'coh_rand')
 
