@@ -175,7 +175,29 @@ def ps_est_gamma_quick(*args):
 
         step_number = 1
         K_ps = np.zeros((n_ps, 1))
+        C_ps = np.zeros((n_ps, 1))
+        coh_ps = np.zeros((n_ps, 1))
+        coh_ps_save = np.zeros((n_ps, 1))
+        N_opt = np.zeros((n_ps, 1))
+        ph_res = np.zeros((n_ps, n_ifg)).astype("float32")
+        ph_patch = np.zeros(np.shape(ph)).astype("float32")
+        N_patch = np.zeros((n_ps, 1))
 
-        # diff = compare_objects(coh_rand, 'coh_rand')
+        xy = xy.astype("float32")
+        grid_ij = np.array(np.ceil((xy[:, 2] - np.min(xy[:, 2]) + 1e-6) / grid_size).reshape(-1, 1), dtype="float32")
+        grid_ij[grid_ij[:, 0] == np.max(grid_ij[:, 0]), 0] = np.max(grid_ij[:, 0]) - 1
+        grid_ij = np.append(grid_ij, np.ceil((xy[:, 1] - np.min(xy[:, 1]) + 1e-6) / grid_size).reshape(-1, 1), axis=1)
+        grid_ij[grid_ij[:, 1] == np.max(grid_ij[:, 1]), 1] = np.max(grid_ij[:, 1]) - 1
+        i_loop = 1
+        weighting = 1 / D_A
+        weighting_save = weighting
+        gamma_change_save = 0
+
+    n_i = np.max(grid_ij[:, 0])
+    n_j = np.max(grid_ij[:, 1])
+
+    print('\n{} PS candidates to process'.format(n_ps))
+
+    # diff = compare_objects(weighting, 'weighting')
 
     return []
