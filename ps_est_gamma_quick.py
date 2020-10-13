@@ -5,6 +5,7 @@ import random
 from numpy.fft import fftshift
 from scipy.io import loadmat, savemat
 
+from clap_filt import clap_filt
 from getparm import get_parm_value as getparm
 from utils import compare_objects, not_supported_param, not_supported
 from ps_topofit import ps_topofit
@@ -193,11 +194,32 @@ def ps_est_gamma_quick(*args):
         weighting_save = weighting
         gamma_change_save = 0
 
-    n_i = np.max(grid_ij[:, 0])
-    n_j = np.max(grid_ij[:, 1])
+    n_i = int(np.max(grid_ij[:, 0]))
+    n_j = int(np.max(grid_ij[:, 1]))
 
     print('\n{} PS candidates to process'.format(n_ps))
+    xy[:, 0] = np.array([*range(n_ps)]) + 1  # assumption that already sorted in ascending column 3 (y-axis) order
+    loop_end_sw = 0
+    n_high_save = 0
 
-    # diff = compare_objects(weighting, 'weighting')
+    while loop_end_sw == 0:
+        # if step_number==1     % check in case restarting and step 1 already completed
+        print('iteration {}'.format(i_loop))
+        print('Calculating patch phases...')
+
+        ph_grid = np.zeros((n_i, n_j, n_ifg)).astype("complex")
+        ph_filt = np.copy(ph_grid)
+        ph_weight = ph * np.exp(-1j * bp["bperp_mat"] * np.tile(K_ps, (1, n_ifg))) * np.tile(weighting, (1, n_ifg))
+
+        grid_ij = grid_ij.astype("int")
+        for i in range(n_ps):
+            # ph_grid(grid_ij(i,1),grid_ij(i,2),:)=ph_grid(grid_ij(i,1),grid_ij(i,2),:)+shiftdim(ph(i,:),-1)*weighting(i);
+            ph_grid[grid_ij[i, 0] - 1, grid_ij[i, 1] - 1, :] = ph_grid[grid_ij[i, 0] - 1, grid_ij[i, 1] - 1,
+                                                               :] + ph_weight[i, :]
+
+        for i in range(n_ifg):
+            ph_filt[:, :, i] = clap_filt(ph_grid[:, :, i], clap_alpha, clap_beta, n_win * 0.75, n_win * 0.25, low_pass)
+
+        diff = compare_objects(ph_grid, 'ph_grid')
 
     return []
