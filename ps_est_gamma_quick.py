@@ -7,7 +7,7 @@ from scipy.io import loadmat, savemat
 
 from clap_filt import clap_filt
 from getparm import get_parm_value as getparm
-from utils import compare_objects, not_supported_param, not_supported
+from utils import compare_objects, not_supported_param, not_supported, compare_complex_objects
 from ps_topofit import ps_topofit
 
 
