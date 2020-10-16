@@ -38,7 +38,7 @@ def clap_filt(*args):
         low_pass = args[5]
 
     ph = args[0]
-    ph_out = np.zeros(np.shape(ph))
+    ph_out = np.zeros(np.shape(ph)).astype("complex")
     [n_i, n_j] = np.shape(ph)
 
     n_inc = np.floor(n_win / 4)
@@ -70,7 +70,7 @@ def clap_filt(*args):
             i_shift = int(i2 - n_i)
             i2 = int(n_i)
             i1 = int(n_i - n_win + 1)
-            wf = np.concatenate((np.zeros((i_shift, n_win)), wf[0:n_win - i_shift, :]))
+            wf = np.concatenate((np.zeros((int(i_shift), int(n_win))), wf[0:int(n_win) - int(i_shift), :]), axis=0)
 
         for ix2 in range(int(n_win_j)):
             wf2 = np.copy(wf)
@@ -80,7 +80,8 @@ def clap_filt(*args):
                 j_shift = int(j2 - n_j)
                 j2 = int(n_j)
                 j1 = int(n_j - n_win + 1)
-                wf2 = np.concatenate((np.zeros((n_win, j_shift)), wf2[:, 0:n_win - j_shift]))
+                wf2 = np.concatenate((np.zeros((int(n_win), int(j_shift))), wf2[:, 0:int(n_win) - int(j_shift)]),
+                                     axis=1)
 
             ph_bit[0:int(n_win), 0:int(n_win)] = ph[i1 - 1:i2, j1 - 1:j2]
             ph_fft = np.fft.fft2(ph_bit)
@@ -98,10 +99,6 @@ def clap_filt(*args):
             if np.isnan(ph_filt[0, 0]):
                 ph_filt[0, 0] = 0j
 
-            ph_out(i1:i2,j1:j2)=ph_out(i1:i2,j1:j2)+ph_filt;
-
-            # diff = compare_objects(G, "G")
-            diff = compare_complex_objects(ph_filt, "ph_filt")
-            pass
+            ph_out[i1 - 1:i2, j1 - 1:j2] = ph_out[i1 - 1:i2, j1 - 1:j2] + ph_filt
 
     return ph_out

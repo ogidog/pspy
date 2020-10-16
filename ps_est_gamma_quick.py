@@ -220,6 +220,8 @@ def ps_est_gamma_quick(*args):
         for i in range(n_ifg):
             ph_filt[:, :, i] = clap_filt(ph_grid[:, :, i], clap_alpha, clap_beta, n_win * 0.75, n_win * 0.25, low_pass)
 
-        diff = compare_objects(ph_grid, 'ph_grid')
+        Сравнить по элементно визуально
+        diff = compare_complex_objects(ph_filt, 'ph_filt')
+        pass
 
     return []
