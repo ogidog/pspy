@@ -49,6 +49,28 @@ def compare_complex_objects(obj, obj_name):
     return diff
 
 
+def compare_complex_objects2(obj, obj_name):
+    obj_matlab = loadmat('D:\\Temp\\stamps\\' + obj_name + '.mat')[obj_name]
+    obj_py = obj
+
+    diff = obj_matlab - obj_py
+    [X, Y, Z] = np.shape(diff)
+    thres = 0.5
+    for x in range(X):
+        for y in range(Y):
+            for z in range(Z):
+                if np.real(diff[x, y, z]) > thres or np.imag(diff[x, y, z]) > thres:
+                    pass
+
+    max_error = np.max(diff)
+    min_error = np.min(diff)
+    diff_pos = np.array(np.where(diff != complex(0, 0)))
+
+    diff = {'diff': diff, 'max_error': max_error, 'diff_pos': diff_pos, 'min_error': min_error}
+
+    return diff
+
+
 def compare_mat_with_number_values(file_name, matlab_path="D:\\Temp\\stamps\\", *excluded_keys):
     mat_matlab = loadmat(matlab_path + file_name)
     mat_py = loadmat(file_name)

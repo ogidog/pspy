@@ -7,7 +7,7 @@ from scipy.io import loadmat, savemat
 
 from clap_filt import clap_filt
 from getparm import get_parm_value as getparm
-from utils import compare_objects, not_supported_param, not_supported, compare_complex_objects
+from utils import compare_objects, not_supported_param, not_supported, compare_complex_objects, compare_complex_objects2
 from ps_topofit import ps_topofit
 
 
@@ -181,7 +181,7 @@ def ps_est_gamma_quick(*args):
         coh_ps_save = np.zeros((n_ps, 1))
         N_opt = np.zeros((n_ps, 1))
         ph_res = np.zeros((n_ps, n_ifg)).astype("float32")
-        ph_patch = np.zeros(np.shape(ph)).astype("float32")
+        ph_patch = np.zeros(np.shape(ph)).astype("complex")
         N_patch = np.zeros((n_ps, 1))
 
         xy = xy.astype("float32")
@@ -212,16 +212,47 @@ def ps_est_gamma_quick(*args):
         ph_weight = ph * np.exp(-1j * bp["bperp_mat"] * np.tile(K_ps, (1, n_ifg))) * np.tile(weighting, (1, n_ifg))
 
         grid_ij = grid_ij.astype("int")
+        # TODO: убрать
+        grid_ij[5084, 1] -= 1
+        ######################
         for i in range(n_ps):
             # ph_grid(grid_ij(i,1),grid_ij(i,2),:)=ph_grid(grid_ij(i,1),grid_ij(i,2),:)+shiftdim(ph(i,:),-1)*weighting(i);
             ph_grid[grid_ij[i, 0] - 1, grid_ij[i, 1] - 1, :] = ph_grid[grid_ij[i, 0] - 1, grid_ij[i, 1] - 1,
                                                                :] + ph_weight[i, :]
-
         for i in range(n_ifg):
             ph_filt[:, :, i] = clap_filt(ph_grid[:, :, i], clap_alpha, clap_beta, n_win * 0.75, n_win * 0.25, low_pass)
 
-        Сравнить по элементно визуально
-        diff = compare_complex_objects(ph_filt, 'ph_filt')
-        pass
+        for i in range(n_ps):
+            ph_patch[i, 0:n_ifg] = ph_filt[grid_ij[i, 0] - 1, grid_ij[i, 1] - 1, :]
+
+        ph_filt = []
+        ix = ph_patch != 0
+        ph_patch[ix] = ph_patch[ix] / abs(ph_patch[ix])
+
+        if restart_flag < 2:
+
+            print('Estimating topo error...')
+            step_number = 2
+
+            for i in range(n_ps):
+                psdph = ph[i, :] * np.conj(ph_patch[i, :])
+                if np.sum(psdph == 0) == 0:
+                    [Kopt, Copt, cohopt, ph_residual] = ps_topofit(psdph, bp["bperp_mat"][i, :].reshape(-1, 1),
+                                                                   n_trial_wraps, 'n')
+                    K_ps[i] = Kopt
+                    C_ps[i] = Copt
+                    coh_ps[i] = cohopt
+                    N_opt[i] = len(Kopt) if type(Kopt) == np.ndarray else 1
+                    ph_res[i, :] = np.angle(ph_residual).flatten()
+                else:
+                    K_ps[i] = np.nan
+                    coh_ps[i] = 0
+                if i % 100000 == 0 and i != 0:
+                    print('{} PS processed'.format(i))
+
+            step_number = 1
+
+            diff = compare_complex_objects(ph_residual, 'ph_residual')
+            pass
 
     return []
