@@ -252,7 +252,41 @@ def ps_est_gamma_quick(*args):
 
             step_number = 1
 
-            diff = compare_complex_objects(ph_residual, 'ph_residual')
-            pass
+            # if i_loop==1
+            # figure
+            # subplot(2,1,1)
+            # hist(weighting,100)
+            # subplot(2,1,2)
+            # hist(coh_ps,100)
+            # end
+
+            gamma_change_rms = np.sqrt(np.sum((coh_ps - coh_ps_save) ** 2) / n_ps)
+            gamma_change_change = gamma_change_rms - gamma_change_save
+            print('gamma_change_change={}'.format(gamma_change_change))
+            gamma_change_save = gamma_change_rms
+            coh_ps_save = coh_ps
+
+            gamma_change_convergence = getparm('gamma_change_convergence')[0][0][0]
+            gamma_max_iterations = getparm('gamma_max_iterations')[0][0][0]
+
+            if np.abs(gamma_change_change) < gamma_change_convergence or i_loop >= gamma_max_iterations:
+                # figure
+                # subplot(2,1,1)
+                # hist(weighting,100)
+                # subplot(2,1,2)
+                # hist(coh_ps,100)
+                loop_end_sw = 1
+            else:
+                i_loop = i_loop + 1
+                if filter_weighting == 'P-square':
+                    step = 0.01 / 2
+                    Na = np.histogram(coh_ps, coh_bins - step)[0]
+                    Nr = Nr * np.sum(Na[0:low_coh_thresh]) / np.sum(
+                        Nr[0:low_coh_thresh])  # scale random distribution to actual, using low coh values
+                    Na[Na == 0] = 1  # avoid divide by zero
+                    Prand = Nr / Na
+
+                    diff = compare_complex_objects(Prand, 'Prand')
+                    pass
 
     return []
