@@ -11,27 +11,16 @@ from getparm import get_parm_value as getparm
 from utils import compare_objects, not_supported_param, not_supported, compare_complex_objects, compare_complex_objects2
 from ps_topofit import ps_topofit
 
-
-def interpolate_1d_vector(vector, factor):
-    """
-    Interpolate, i.e. upsample, a given 1D vector by a specific interpolation factor.
-    :param vector: 1D data vector
-    :param factor: factor for interpolation (must be integer)
-    :return: interpolated 1D vector by a given factor
-    """
-    x = np.arange(np.size(vector))
-    y = vector
-    f = interpolate.interp1d(x, y)
-
-    x_extended_by_factor = np.linspace(x[0], x[-1], np.size(x) * factor)
-    y_interpolated = np.zeros(np.size(x_extended_by_factor))
-
-    i = 0
-    for x in x_extended_by_factor:
-        y_interpolated[i] = f(x)
-        i += 1
-
-    return y_interpolated
+def interp(ys, mul):
+    # linear extrapolation for last (mul - 1) points
+    ys = list(ys)
+    ys.append(2*ys[-1] - ys[-2])
+    # make interpolation function
+    xs = np.arange(len(ys))
+    fn = interpolate.interp1d(xs, ys, kind="cubic")
+    # call it on desired data points
+    new_xs = np.arange(len(ys) - 1, step=1./mul)
+    return fn(new_xs)
 
 
 def ps_est_gamma_quick(*args):
@@ -321,7 +310,7 @@ def ps_est_gamma_quick(*args):
                     gausswin = signal.gaussian(7, std=std)
                     Prand = signal.lfilter(gausswin, 1, np.concatenate((np.ones((7)), Prand), axis=0)) / sum(gausswin)
                     Prand = Prand[7:]
-                    Prand = interpolate_1d_vector(np.append(np.array([1]), Prand), 10)  # interpolate to 100 samples
+                    Prand = interp(np.append(np.array([1]), Prand), 10)  # interpolate to 100 samples
                     Prand = Prand[0:-9]
                     Prand_ps = Prand[(np.round(coh_ps * 1000)).flatten().astype("int")].reshape(-1, 1)
                     weighting = (1 - Prand_ps) ** 2
@@ -340,9 +329,11 @@ def ps_est_gamma_quick(*args):
         else:
             loop_end_sw = 1
 
-        #savemat(pmname,ph_patch,K_ps,C_ps,coh_ps,N_opt,ph_res,step_number,ph_grid,n_trial_wraps,grid_ij,grid_size,low_pass,i_loop,ph_weight,Nr,Nr_max_nz_ix,coh_bins,coh_ps_save,gamma_change_save)
-
-        #diff = compare_complex_objects(weighting, 'weighting')
-        # pass
+        savemat(pmname,{"ph_patch":ph_patch,
+                        "K_ps":K_ps,
+                        "C_ps":C_ps,
+                        "coh_ps":coh_ps,
+                        "N_opt":N_opt,
+                        ph_res,step_number,ph_grid,n_trial_wraps,grid_ij,grid_size,low_pass,i_loop,ph_weight,Nr,Nr_max_nz_ix,coh_bins,coh_ps_save,gamma_change_save})
 
     return []
