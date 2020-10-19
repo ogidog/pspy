@@ -3,12 +3,35 @@ import os
 from matplotlib.pyplot import hist
 import random
 from numpy.fft import fftshift
+from scipy import signal, interpolate
 from scipy.io import loadmat, savemat
 
 from clap_filt import clap_filt
 from getparm import get_parm_value as getparm
 from utils import compare_objects, not_supported_param, not_supported, compare_complex_objects, compare_complex_objects2
 from ps_topofit import ps_topofit
+
+
+def interpolate_1d_vector(vector, factor):
+    """
+    Interpolate, i.e. upsample, a given 1D vector by a specific interpolation factor.
+    :param vector: 1D data vector
+    :param factor: factor for interpolation (must be integer)
+    :return: interpolated 1D vector by a given factor
+    """
+    x = np.arange(np.size(vector))
+    y = vector
+    f = interpolate.interp1d(x, y)
+
+    x_extended_by_factor = np.linspace(x[0], x[-1], np.size(x) * factor)
+    y_interpolated = np.zeros(np.size(x_extended_by_factor))
+
+    i = 0
+    for x in x_extended_by_factor:
+        y_interpolated[i] = f(x)
+        i += 1
+
+    return y_interpolated
 
 
 def ps_est_gamma_quick(*args):
@@ -208,7 +231,7 @@ def ps_est_gamma_quick(*args):
         print('Calculating patch phases...')
 
         ph_grid = np.zeros((n_i, n_j, n_ifg)).astype("complex")
-        ph_filt = np.copy(ph_grid)
+        ph_filt = ph_grid
         ph_weight = ph * np.exp(-1j * bp["bperp_mat"] * np.tile(K_ps, (1, n_ifg))) * np.tile(weighting, (1, n_ifg))
 
         grid_ij = grid_ij.astype("int")
@@ -285,8 +308,41 @@ def ps_est_gamma_quick(*args):
                         Nr[0:low_coh_thresh])  # scale random distribution to actual, using low coh values
                     Na[Na == 0] = 1  # avoid divide by zero
                     Prand = Nr / Na
+                    Prand[0:low_coh_thresh] = 1
 
-                    diff = compare_complex_objects(Prand, 'Prand')
-                    pass
+                    # TODO: может быть ошибка
+                    Prand[Nr_max_nz_ix + 1:] = 0
+                    ##########################
+                    Prand[Prand > 1] = 1
+                    # For gaussian std=(N-1)/(2*alpha1)
+                    N = 7
+                    alpha1 = 2.5
+                    std = ((N - 1) / (2 * alpha1))
+                    gausswin = signal.gaussian(7, std=std)
+                    Prand = signal.lfilter(gausswin, 1, np.concatenate((np.ones((7)), Prand), axis=0)) / sum(gausswin)
+                    Prand = Prand[7:]
+                    Prand = interpolate_1d_vector(np.append(np.array([1]), Prand), 10)  # interpolate to 100 samples
+                    Prand = Prand[0:-9]
+                    Prand_ps = Prand[(np.round(coh_ps * 1000)).flatten().astype("int")].reshape(-1, 1)
+                    weighting = (1 - Prand_ps) ** 2
+                else:
+                    not_supported_param("filter_weighting", filter_weighting)
+
+                    # ph_n=angle(ph_res.*repmat(conj(sum(ph_res,2)),1,n_ifg)); % subtract mean, take angle
+                    # sigma_n=std(A.*sin(ph_n),0,2); % noise
+
+                    g = np.mean(A * np.cos(ph_res), 2)  # signal
+                    sigma_n = np.sqrt(0.5 * (np.mean(A ** 2, axis=1) - g ** 2));
+                    # snr=(g./sigma_n).^2;
+
+                    weighting[sigma_n == 0] = 0
+                    weighting[sigma_n != 0] = g[sigma_n != 0] / sigma_n[sigma_n != 0]  # snr
+        else:
+            loop_end_sw = 1
+
+        #savemat(pmname,ph_patch,K_ps,C_ps,coh_ps,N_opt,ph_res,step_number,ph_grid,n_trial_wraps,grid_ij,grid_size,low_pass,i_loop,ph_weight,Nr,Nr_max_nz_ix,coh_bins,coh_ps_save,gamma_change_save)
+
+        #diff = compare_complex_objects(weighting, 'weighting')
+        # pass
 
     return []
