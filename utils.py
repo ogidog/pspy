@@ -23,8 +23,8 @@ def compare_objects(obj, obj_name):
     obj_matlab = loadmat('D:\\Temp\\stamps\\' + obj_name + '.mat')[obj_name]
     obj_py = obj
 
-    obj_matlab[np.isnan(obj_matlab)] = 9999999
-    obj_py[np.isnan(obj_py)] = 9999999
+    obj_matlab[np.isnan(obj_matlab)] = 0
+    obj_py[np.isnan(obj_py)] = 0
 
     diff = obj_matlab - obj_py
     max_error = np.max(diff)
@@ -39,41 +39,44 @@ def compare_complex_objects(obj, obj_name):
     obj_matlab = loadmat('D:\\Temp\\stamps\\' + obj_name + '.mat')[obj_name]
     obj_py = obj
 
-    diff = obj_matlab - obj_py
-    max_error = np.max(diff)
-    min_error = np.min(diff)
-    diff_pos = np.array(np.where(diff != complex(0, 0)))
+    obj_matlab[np.isnan(obj_matlab)] = 0j
+    obj_py[np.isnan(obj_py)] = 0j
 
-    diff = {'diff': diff, 'max_error': max_error, 'diff_pos': diff_pos, 'min_error': min_error}
+    obj_matlab_phase = np.angle(obj_matlab)
+    obj_matlab_magnitude = np.abs(obj_matlab)
+
+    obj_py_phase = np.angle(obj_py)
+    obj_py_magnitude = np.abs(obj_py)
+
+    diff_phase = obj_matlab_phase - obj_py_phase
+    max_error_phase = np.max(diff_phase)
+    min_error_phase = np.min(diff_phase)
+    diff_pos_phase = np.array(np.where(diff_phase != 0))
+
+    diff_magnitude = obj_matlab_magnitude - obj_py_magnitude
+    max_error_magnitude = np.max(diff_magnitude)
+    min_error_magnitude = np.min(diff_magnitude)
+    diff_pos_magnitude = np.array(np.where(diff_magnitude != 0))
+
+    diff = {'diff_magnitude': diff_magnitude,
+            'max_error_magnitude': max_error_magnitude,
+            'diff_pos_magnitude': diff_pos_magnitude,
+            'min_error_magnitude': min_error_magnitude,
+            'diff_phase': diff_phase,
+            'max_error_phase': max_error_phase,
+            'diff_pos_phase': diff_pos_phase,
+            'min_error_phase': min_error_phase
+            }
 
     return diff
 
 
-def compare_complex_objects2(obj, obj_name):
-    obj_matlab = loadmat('D:\\Temp\\stamps\\' + obj_name + '.mat')[obj_name]
-    obj_py = obj
-
-    diff = obj_matlab - obj_py
-    [X, Y, Z] = np.shape(diff)
-    thres = 0.5
-    for x in range(X):
-        for y in range(Y):
-            for z in range(Z):
-                if np.real(diff[x, y, z]) > thres or np.imag(diff[x, y, z]) > thres:
-                    pass
-
-    max_error = np.max(diff)
-    min_error = np.min(diff)
-    diff_pos = np.array(np.where(diff != complex(0, 0)))
-
-    diff = {'diff': diff, 'max_error': max_error, 'diff_pos': diff_pos, 'min_error': min_error}
-
-    return diff
-
-
-def compare_mat_with_number_values(file_name, matlab_path="D:\\Temp\\stamps\\", *excluded_keys):
+def compare_mat_with_number_values(file_name, matlab_path="D:\\Temp\\stamps\\", **kwargs):
     mat_matlab = loadmat(matlab_path + file_name)
     mat_py = loadmat(file_name)
+
+    if "excluded_keys" in kwargs:
+        excluded_keys = kwargs["excluded_keys"]
 
     keys_matlab = mat_matlab.keys()
 

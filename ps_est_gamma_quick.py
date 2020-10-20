@@ -8,18 +8,20 @@ from scipy.io import loadmat, savemat
 
 from clap_filt import clap_filt
 from getparm import get_parm_value as getparm
-from utils import compare_objects, not_supported_param, not_supported, compare_complex_objects, compare_complex_objects2
+from utils import compare_objects, not_supported_param, not_supported, compare_complex_objects, \
+    compare_mat_with_number_values
 from ps_topofit import ps_topofit
+
 
 def interp(ys, mul):
     # linear extrapolation for last (mul - 1) points
     ys = list(ys)
-    ys.append(2*ys[-1] - ys[-2])
+    ys.append(2 * ys[-1] - ys[-2])
     # make interpolation function
     xs = np.arange(len(ys))
     fn = interpolate.interp1d(xs, ys, kind="cubic")
     # call it on desired data points
-    new_xs = np.arange(len(ys) - 1, step=1./mul)
+    new_xs = np.arange(len(ys) - 1, step=1. / mul)
     return fn(new_xs)
 
 
@@ -107,7 +109,7 @@ def ps_est_gamma_quick(*args):
     ps.clear()
 
     A = np.abs(ph)
-    # A = A.astype("float32")
+    #A = A.astype("float32")
     A[A == 0] = 1  # avoid divide by zero
     ph = ph / A
 
@@ -193,7 +195,7 @@ def ps_est_gamma_quick(*args):
         coh_ps_save = np.zeros((n_ps, 1))
         N_opt = np.zeros((n_ps, 1))
         ph_res = np.zeros((n_ps, n_ifg)).astype("float32")
-        ph_patch = np.zeros(np.shape(ph)).astype("complex")
+        ph_patch = np.zeros(np.shape(ph)).astype("complex64")
         N_patch = np.zeros((n_ps, 1))
 
         xy = xy.astype("float32")
@@ -220,17 +222,15 @@ def ps_est_gamma_quick(*args):
         print('Calculating patch phases...')
 
         ph_grid = np.zeros((n_i, n_j, n_ifg)).astype("complex")
-        ph_filt = ph_grid
+        ph_filt = np.copy(ph_grid)
         ph_weight = ph * np.exp(-1j * bp["bperp_mat"] * np.tile(K_ps, (1, n_ifg))) * np.tile(weighting, (1, n_ifg))
 
         grid_ij = grid_ij.astype("int")
-        # TODO: убрать
-        grid_ij[5084, 1] -= 1
-        ######################
         for i in range(n_ps):
             # ph_grid(grid_ij(i,1),grid_ij(i,2),:)=ph_grid(grid_ij(i,1),grid_ij(i,2),:)+shiftdim(ph(i,:),-1)*weighting(i);
             ph_grid[grid_ij[i, 0] - 1, grid_ij[i, 1] - 1, :] = ph_grid[grid_ij[i, 0] - 1, grid_ij[i, 1] - 1,
                                                                :] + ph_weight[i, :]
+
         for i in range(n_ifg):
             ph_filt[:, :, i] = clap_filt(ph_grid[:, :, i], clap_alpha, clap_beta, n_win * 0.75, n_win * 0.25, low_pass)
 
@@ -251,11 +251,13 @@ def ps_est_gamma_quick(*args):
                 if np.sum(psdph == 0) == 0:
                     [Kopt, Copt, cohopt, ph_residual] = ps_topofit(psdph, bp["bperp_mat"][i, :].reshape(-1, 1),
                                                                    n_trial_wraps, 'n')
+
                     K_ps[i] = Kopt
                     C_ps[i] = Copt
                     coh_ps[i] = cohopt
                     N_opt[i] = len(Kopt) if type(Kopt) == np.ndarray else 1
                     ph_res[i, :] = np.angle(ph_residual).flatten()
+
                 else:
                     K_ps[i] = np.nan
                     coh_ps[i] = 0
@@ -329,11 +331,23 @@ def ps_est_gamma_quick(*args):
         else:
             loop_end_sw = 1
 
-        savemat(pmname,{"ph_patch":ph_patch,
-                        "K_ps":K_ps,
-                        "C_ps":C_ps,
-                        "coh_ps":coh_ps,
-                        "N_opt":N_opt,
-                        ph_res,step_number,ph_grid,n_trial_wraps,grid_ij,grid_size,low_pass,i_loop,ph_weight,Nr,Nr_max_nz_ix,coh_bins,coh_ps_save,gamma_change_save})
+        savemat(pmname, {"ph_patch": ph_patch,
+                         "K_ps": K_ps,
+                         "C_ps": C_ps,
+                         "coh_ps": coh_ps,
+                         "N_opt": N_opt,
+                         "ph_res": ph_res,
+                         "step_number": step_number,
+                         "ph_grid": ph_grid,
+                         "n_trial_wraps": n_trial_wraps,
+                         "grid_ij": grid_ij,
+                         "grid_size": grid_size,
+                         "low_pass": low_pass,
+                         "i_loop": i_loop,
+                         "ph_weight": ph_weight,
+                         "Nr": Nr,
+                         "Nr_max_nz_ix": Nr_max_nz_ix,
+                         "coh_bins": coh_bins,
+                         "coh_ps_save": coh_ps_save,
+                         "gamma_change_save": gamma_change_save})
 
-    return []

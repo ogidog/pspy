@@ -103,11 +103,12 @@ def ps_load_initial_gamma(*args):
         bperp_mat[:, i] = (bc.reshape(-1, 1) * np.cos(look) - bn.reshape(-1, 1) * np.sin(look)).flatten()
         # bpara=bc*sin(look)+bn*cos(look)
 
-    bperp = np.mean(bperp_mat, axis=0).reshape(-1, 1)
+    bperp_mat = bperp_mat.astype("float32")
+    bperp = np.mean(bperp_mat, axis=0).reshape(-1, 1).astype("float32")
     if master_master_flag == 1:
         bperp_mat = np.concatenate((bperp_mat[:, 0:master_ix - 1], bperp_mat[:, master_ix:]), axis=1)
     else:
-        bperp = np.concatenate((bperp[0:master_ix - 1], np.array([[0]]), bperp[master_ix - 1:]), axis=0)
+        bperp = np.concatenate((bperp[0:master_ix - 1], np.array([[0]]), bperp[master_ix - 1:]), axis=0).astype("float32")
     # bperp=[bperp(1:master_ix-1);0;bperp(master_ix:end)]; % insert master-master bperp (zero)
     # bperp_mat=repmat(single(bperp([1:master_ix-1,master_ix+1:end]))',n_ps,1);
 
@@ -123,8 +124,7 @@ def ps_load_initial_gamma(*args):
         for i in range(n_ps):
             a = struct.unpack_from(">f", binary_data, offset=i * 8)
             b = struct.unpack_from(">f", binary_data, offset=8 * i + 4)
-            ph[i, j] = a[0] + 1j * b[0]
-
+            ph[i, j] = np.complex(a[0], b[0])
     f.close()
 
     zero_ph = np.sum(ph == 0, axis=1).reshape(-1, 1)
@@ -184,6 +184,7 @@ def ps_load_initial_gamma(*args):
     bperp_mat = bperp_mat[sort_ix, :]
 
     savename = "ps" + str(psver) + ".mat"
+    savename = "ps" + str(psver) + ".mat"
     ps_dict = {
         "ij": ij,
         "lonlat": lonlat,
@@ -241,21 +242,3 @@ def ps_load_initial_gamma(*args):
         # save(hgtsavename,'hgt');
         savemat(hgtsavename, {"hgt": hgt})
 
-    # diff = compare_mat_with_number_values("ps1.mat",
-    #                                      "D:\\Temp\\test1\\123456789124\\stampsexport\\" + os.getcwd()[-7:]+"\\")
-    # diff = compare_mat_with_number_values("psver.mat",
-    #                                      "D:\\Temp\\test1\\123456789124\\stampsexport\\" + os.getcwd()[-7:]+"\\")
-    # diff = compare_mat_with_number_values("ph1.mat",
-    #                                      "D:\\Temp\\test1\\123456789124\\stampsexport\\" + os.getcwd()[-7:]+"\\")
-    # diff = compare_mat_with_number_values("bp1.mat",
-    #                                      "D:\\Temp\\test1\\123456789124\\stampsexport\\" + os.getcwd()[-7:]+"\\")
-    # diff = compare_mat_with_number_values("la1.mat",
-    #                                      "D:\\Temp\\test1\\123456789124\\stampsexport\\" + os.getcwd()[-7:]+"\\")
-    # diff = compare_mat_with_number_values("da1.mat",
-    #                                      "D:\\Temp\\test1\\123456789124\\stampsexport\\" + os.getcwd()[-7:]+"\\")
-    # diff = compare_mat_with_number_values("hgt1.mat",
-    #                                      "D:\\Temp\\test1\\123456789124\\stampsexport\\" + os.getcwd()[-7:]+"\\")
-
-    # diff = compare_objects(sort_ix.reshape(-1,1)+1, 'sort_ix')
-    # diff = compare_complex_objects(ph, 'ph')
-    # pass
