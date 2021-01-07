@@ -410,11 +410,6 @@ def uw_sb_unwrap_space_time(day, ifgday_ix, unwrap_method, time_win, la_flag, bp
             dph_space_uw = dph_smooth_ifg + dph_noise
             dph_smooth_ifg = []
 
-            # TODO: убрать
-            # diff = compare_complex_objects(dph_smooth, 'dph_smooth')
-            # diff = compare_objects(dph_space_uw, 'dph_space_uw')
-            # print("fff")
-
             if la_flag == 'y':
                 dph_space_uw = dph_space_uw + (K * bperp.flatten())
 

@@ -236,6 +236,58 @@ def main(args):
                         print('No PS left in step 1, so will skip step 2 \n')
                     savemat('no_ps_info.mat', {"stamps_step_no_ps": stamps_step_no_ps})
 
+                if start_step <= 3 and end_step >= 3:
+                    print('\n##################\n' +
+                          '##### Step 3 #####\n' +
+                          '##################\n')
+
+                    # check if step 2 had more than 0 PS points
+                    #load('no_ps_info.mat');
+                    # reset as we are currently re-processing
+                    #stamps_step_no_ps(3:end)=0;
+
+                    # run step 3 when there are PS left in step 2
+                    #if stamps_step_no_ps(2)==0
+                    #    if strcmpi(quick_est_gamma_flag,'y') & strcmpi(reest_gamma_flag,'y')
+                    #        #TODO: Рома, добавь сюда свою функцию. Название такое же как в матлабе
+                    #        ps_select;
+                    #    else
+                            #TODO: Рома, добавь сюда свою функцию. Название такое же как в матлабе
+                    #        ps_select(1);
+                    #    end
+                    #else
+                    #    fprintf('No PS left in step 2, so will skip step 3 \n')
+                    #    stamps_step_no_ps(3)=1;
+                    #end
+                    #save('no_ps_info.mat','stamps_step_no_ps')
+
+                if start_step <= 4 and end_step >= 4:
+                    print('\n##################\n' +
+                          '##### Step 4 #####\n' +
+                          '##################\n')
+
+                    # check if step 3 had more than 0 PS points
+                    #load('no_ps_info.mat');
+                    # reset as we are currently re-processing
+                    #stamps_step_no_ps(4:end) =0;       # keep for the first 5 steps only
+
+
+                    # run step 4 when there are PS left in step 3
+                    #if stamps_step_no_ps(3)==0
+                    #    if strcmpi(small_baseline_flag,'y')
+                            #TODO: Рома, добавь сюда свою функцию. Название такое же как в матлабе
+                    #        ps_weed(0,1);
+                    #    else
+                            #TODO: Рома, добавь сюда свою функцию. Название такое же как в матлабе
+                    #        ps_weed;
+                    #    end
+                    #else
+                    #    fprintf('No PS left in step 3, so will skip step 4 \n')
+                    #    stamps_step_no_ps(4)=1;
+
+                    #end
+                    #save('no_ps_info.mat','stamps_step_no_ps')
+
                 if start_step <= 5 and end_step >= 5:
                     print('Directory is {}'.format(patchsplit[len(patchsplit) - 1]))
                     no_ps_info = loadmat('no_ps_info.mat')

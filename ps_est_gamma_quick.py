@@ -161,22 +161,22 @@ def ps_est_gamma_quick(*args):
             # clear rand_image
         else:
             # TODO: только для тестов, убрать!!!!
-            rand_ifg = loadmat("..\\..\\rand_ifg.mat")["rand_ifg"]
+            #rand_ifg = loadmat("..\\..\\rand_ifg.mat")["rand_ifg"]
             # TODO: раскоментить это
-            # np.random.seed(seed=2005)  # determine distribution for random phase
-            # rand_ifg = 2 * np.pi * np.random.rand(n_rand, n_ifg)
+            np.random.seed(seed=2005)  # determine distribution for random phase
+            rand_ifg = 2 * np.pi * np.random.rand(n_rand, n_ifg)
 
         # TODO: убрать if - это для быстрой отладки
-        if os.path.exists("coh_rand.mat"):
-            coh_rand = loadmat("coh_rand.mat")["coh_rand"][0]
-        else:
-            coh_rand = np.zeros(n_rand)
-            for i in np.arange(n_rand - 1, -1, -1):
-                K_r, C_r, coh_r, phase_residual = ps_topofit(np.exp(1j * rand_ifg[i, :]), bperp, n_trial_wraps, 'n')
-                coh_rand[i] = coh_r
+        #if os.path.exists("coh_rand.mat"):
+        #    coh_rand = loadmat("coh_rand.mat")["coh_rand"][0]
+        #else:
+        coh_rand = np.zeros(n_rand)
+        for i in np.arange(n_rand - 1, -1, -1):
+            K_r, C_r, coh_r, phase_residual = ps_topofit(np.exp(1j * rand_ifg[i, :]), bperp, n_trial_wraps, 'n')
+            coh_rand[i] = coh_r
 
             # TODO: убрать, Это только для быстрой отладки!!!
-            savemat("coh_rand.mat", {"coh_rand": coh_rand})
+            # savemat("coh_rand.mat", {"coh_rand": coh_rand})
 
         rand_ifg = []
         coh_bins = np.arange(0.005, 1.01, 0.01)
