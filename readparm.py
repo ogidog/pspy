@@ -1,8 +1,6 @@
 import numpy as np
 
-
-def readparm(*args):
-    # fname,parm,numval,log_flag
+def readparm(*args): # fname,parm,numval,log_flag
 
     if len(args) < 3:
         numval = 1
@@ -11,10 +9,12 @@ def readparm(*args):
 
     if len(args) < 4:
         log_flag = 1
-
+    else:
+        log_flag = args[3]
+        
     fname = args[0]
     parm = args[1]
-    f = open(fname);
+    f = open(fname)
     parm_lines = f.readlines()
     f.close()
 
@@ -32,4 +32,4 @@ def readparm(*args):
                     print(parm + "=" + " ".join(value))
             break
 
-    return value
+    return(value)

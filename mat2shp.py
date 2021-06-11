@@ -1,11 +1,9 @@
 import sys, os
 import shapefile
 from datetime import date
-
 from scipy.io import loadmat
 
-
-def main(args):
+def mat2shp(*args):
     ts_plot_file = args[1]
     ps_plot_file = args[2]
     outputDir = args[3]
@@ -19,12 +17,12 @@ def main(args):
     days = ts_v_d["day"].flatten()
     ids = ts_v_d["ref_ps"].flatten()
 
-    w = shapefile.Writer(outputDir + os.path.sep + "ts_v-d", shapeType=1)
+    w = shapefile.Writer(outputDir + os.path.sep + "ts_v-d", shapeType = 1)
     w.field("id", "N")
-    w.field("vel", "N", decimal=10)
+    w.field("vel", "N", decimal = 10)
     for day in days:
         col_name = "D" + date.fromordinal(day - 366).strftime("%Y%m%d")
-        w.field(col_name, "N", decimal=10)
+        w.field(col_name, "N", decimal = 10)
 
     for id in ids:
         record_values_list = [id, ph_disp[id - 1]]
@@ -34,8 +32,9 @@ def main(args):
 
     w.close()
 
-
+###############################################################################
 if __name__ == "__main__":
-    args = sys.argv
-    main(args)
-    sys.exit(0)
+    # For testing
+    args = ['', 'ps_plot_ts_v-d.mat', 'ps_plot_v-d.mat', 'C:\\Users\\Ryzen\\Documents\\PYTHON\\stampsexport_tmp']
+    # args = sys.argv
+    mat2shp(*args)

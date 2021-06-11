@@ -1,4 +1,4 @@
-import os, sys
+import os
 import copy
 import numpy as np
 from datetime import datetime
@@ -35,21 +35,22 @@ def print_parm(parms, key):
         print(key + ': {}'.format(parms_value_format(value)))
 
 
-def ps_parms_default():
-    parmfile = 'parms.mat';
-    parent_flag = 0;
-
-    if os.path.exists('.' + os.path.sep + parmfile):
-        parms = loadmat(parmfile);
+def ps_parms_default(*args):
+    
+    if len(args) > 0:
+        path_to = args[0]
     else:
-        if os.path.exists('..' + os.path.sep + parmfile):
-            parmfile = '..' + os.path.sep + parmfile;
-            parms = loadmat(parmfile);
-            parent_flag = 1;
-        else:
-            parms = {}
-            parms['Created'] = datetime.today().strftime('%Y-%m-%d')
-            parms['small_baseline_flag'] = 'n'
+        path_to = ''
+    
+    parmfile = path_to + 'parms.mat'
+
+    if os.path.exists(parmfile):
+        parms = loadmat(parmfile, squeeze_me = True)
+
+    else:
+        parms = {}
+        parms['Created'] = datetime.today().strftime('%Y-%m-%d')
+        parms['small_baseline_flag'] = 'n'
 
     parmfields_before = copy.copy(list(parms.keys()))
     num_fields = len(parmfields_before);
@@ -143,10 +144,10 @@ def ps_parms_default():
 
     if 'unwrap_ifg_index' in parmfields_before:
         try:
-            ps = loadmat('ps2.mat');
+            ps = loadmat(path_to + 'ps2.mat', squeeze_me = True)
         except:
             try:
-                ps = loadmat('ps1.mat');
+                ps = loadmat(path_to + 'ps1.mat', squeeze_me = True)
             except:
                 print('')
 
@@ -291,19 +292,19 @@ def ps_parms_default():
         if not os.path.exists(lambdaname):
             parms['lambda'] = float('nan')
         else:
-            lambda1 = loadmat(lambdaname)
+            lambda1 = loadmat(path_to + lambdaname, squeeze_me = True)
             parms['lambda'] = lambda1
 
     headingname = 'heading.1.in'
     if 'heading' not in parmfields_before:
-        if not os.path.exists(headingname):
+        if not os.path.exists(path_to + headingname):
             headingname = '..' + os.path.sep + headingname
         if not os.path.exists(headingname):
             headingname = '..' + os.path.sep + headingname
         if not os.path.exists(headingname):
             parms['heading'] = float('nan')
         else:
-            heading = loadmat(headingname)
+            heading = loadmat(path_to + headingname, squeeze_me = True)
             parms['heading'] = heading
 
     if 'scla_deramp' not in parmfields_before:
@@ -314,7 +315,7 @@ def ps_parms_default():
             parms['sb_scla_drop_index'] = []
 
     if 'insar_processor' not in parmfields_before:
-        processor_file = 'processor.txt';
+        processor_file = path_to + 'processor.txt'
         if os.path.splitext(processor_file) not in ['.m', '.mlx', '.mlapp', '.mat', '.fig', '.txt']:
             if os.path.splitext('..' + os.path.sep + processor_file) in ['.m', '.mlx', '.mlapp', '.mat', '.fig',
                                                                          '.txt']:
@@ -325,13 +326,14 @@ def ps_parms_default():
 
         if os.path.splitext('..' + os.path.sep + processor_file) in ['.m', '.mlx', '.mlapp', '.mat', '.fig', '.txt']:
             parms['insar_processor'] = 'doris'
+            
         else:
             f = open(processor_file)
             processor = str(f.read()).strip()
             parms['insar_processor'] = processor
 
             if processor != 'gamma' and processor != 'doris':
-                print('\nWARNING: This processor is not supported (doris and gamma)\n')
+                print('WARNING: This processor is not supported (doris and gamma)')
 
     if 'subtr_tropo' not in parmfields_before:
         parms['subtr_tropo'] = 'n'
@@ -341,7 +343,7 @@ def ps_parms_default():
 
     parmfields = parms.keys()
     if len(parmfields) != num_fields:
-        print('Set default parameters: \n')
+        print('Set default parameters:')
         try:
             savemat(parmfile, parms)
             for key in parmfields:
@@ -349,4 +351,4 @@ def ps_parms_default():
                     parmname = key
                     print_parm(parms, key)
         except:
-            print('Warning: missing parameters could not be updated (no write access)\n')
+            print('Warning: missing parameters could not be updated (no write access)')

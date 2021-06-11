@@ -3,60 +3,48 @@ from scipy.io import loadmat
 from getparm import get_parm_value as getparm
 
 
-def ps_setref(ps2={}):
+def ps_setref(ps2 = {}, *args):
+    
+    path_to = args[0]
+    ops = args[1]
+    
     if ps2 == {}:
         nargin = 0
-        psver = loadmat('psver.mat')['psver'][0][0]
-        psname = 'ps' + str(psver)
-        ps2 = loadmat(psname + '.mat')
+        psver = str(loadmat(path_to + 'psver.mat', squeeze_me = True)['psver'])
+        psname = path_to + 'ps' + psver + '.mat'
+        ps2 = loadmat(psname)
     else:
         nargin = 1
-        psver = loadmat('psver.mat')['psver'][0][0]
-        psname = 'ps' + str(psver)
-        ps_temp = loadmat(psname + '.mat')
+        psver = str(loadmat(path_to + 'psver.mat', squeeze_me = True)['psver'])
+        psname = path_to + 'ps' + psver + '.mat'
+        ps_temp = loadmat(psname, squeeze_me = True)
         ps2['ll0'] = ps_temp['ll0']
-        ps2['n_ps'] = len(ps2['lonlat'][0])
+        ps2['n_ps'] = len(ps2['lonlat'])
 
-    [ref_lon, parmname] = getparm('ref_x');
-
-    if parmname == 'ref_x':
-        ps2_x = ps2['xy'][:, 1]
-        ps2_y = ps2['xy'][:, 2]
-        ref_x = getparm('ref_x')[0]
-        ref_y = getparm('ref_y')[0]
-        ref_ps = [i for i in range(len(ps2_x)) if
-                  ps2_x[i] > ref_x[0] and ps2_x[i] < ref_x[1] and ps2_y[i] > ref_y[0] and ps2_y[i] < ref_y[1]]
-    else:
-        ref_lon = getparm('ref_lon')[0][0]
-        ref_lat = getparm('ref_lat')[0][0]
-        ref_centre_lonlat = getparm('ref_centre_lonlat')[0][0]
-        ref_radius = getparm('ref_radius')[0][0][0]
+    ref_lon = ops['ref_lon']
+    ref_lat = ops['ref_lat']
+    ref_centre_lonlat = ops['ref_centre_lonlat']
+    ref_radius = ops['ref_radius']
 
     if ref_radius == np.float('-inf'):
         ref_ps = 0
     else:
         ps2_lon = ps2['lonlat'][:, 0]
         ps2_lat = ps2['lonlat'][:, 1]
-        ref_ps = [i for i in range(len(ps2_lon)) if
-                  ps2_lon[i] > ref_lon[0] and ps2_lon[i] < ref_lon[1] and ps2_lat[i] > ref_lat[0] and ps2_lat[i] <
-                  ref_lat[1]]
+        ref_ps = [i for i in range(len(ps2_lon)) if ps2_lon[i] > ref_lon[0] and ps2_lon[i] < ref_lon[1] and ps2_lat[i] > ref_lat[0] and ps2_lat[i] < ref_lat[1]]
 
         if ref_radius < np.float('inf'):
-            print("You set the param ref_radius={}, but not supported yet.".format(getparm('ref_radius')[0][0]))
-            # ref_xy = llh2local(ref_centre_lonlat.T, ps2['ll0'][0]) * 1000;
-            # xy=llh2local(ps2.lonlat(ref_ps,:)',ps2.ll0)*1000;
-            # dist_sq=(xy(1,:)-ref_xy(1)).^2+(xy(2,:)-ref_xy(2)).^2;
-            # ref_ps=ref_ps(dist_sq<=ref_radius^2);
+            print('* You set the param ref_radius != inf, but not supported yet (ps_setref).')
 
     if nargin == 1:
         if len(ref_ps) == 0:
-            print('None of your external data points have a reference, all are set as reference. \n')
-            ref_ps = np.range(1, ps2['n_ps'][0][0])
+            print('* None of your external data points have a reference, all are set as reference (ps_setref).')
+            ref_ps = np.range(1, ps2['n_ps'])
 
     if nargin < 1:
         if ref_ps == 0:
-            print('No reference set')
+            print('* No reference set (ps_setref).')
         else:
-            print('{} ref PS selected'.format(len(ref_ps)))
+            print(len(ref_ps), 'reference PS selected (ps_setref).')
 
-    return ref_ps
+    return(ref_ps)

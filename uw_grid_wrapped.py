@@ -12,10 +12,10 @@ from utils import *
 def uw_grid_wrapped(*args):
     # params: ph_in, xy_in, pix_size, prefilt_win, goldfilt_flag, lowfilt_flag, gold_alpha, ph_in_predef
 
-    print('Resampling phase to grid...\n')
+    print('*** Resampling phase to grid (uw_grid_wrapped).')
 
     if len(args) < 2:
-        print('not enough arguments')
+        print('*** Not enough arguments.')
         sys.exit(0)
 
     if len(args) < 3:
@@ -46,11 +46,11 @@ def uw_grid_wrapped(*args):
     n_ps = len(ph_in)
     n_ifg = len(ph_in[0])
 
-    print('   Number of interferograms  : {}'.format(n_ifg))
-    print('   Number of points per ifg  : {}'.format(n_ps))
+    print('*** Number of interferograms:', n_ifg)
+    print('*** Number of points per ifg:', n_ps)
 
     if np.any(np.isreal(ph_in)) == True and sum(sum(ph_in == 0)) > 0:
-        print('Some phase values are zero')
+        print('*** Some phase values are zero.')
 
     xy_in = args[1]
     xy_in[:, 0] = np.array([i + 1 for i in range(0, n_ps)])
@@ -78,17 +78,20 @@ def uw_grid_wrapped(*args):
         n_i = int(np.amax(grid_ij[:, 0]))
         n_j = int(np.amax(grid_ij[:, 1]))
 
-    ph_grid = np.zeros((n_i, n_j), dtype=int)
+    prefilt_win = args[3]
+
+    if min([n_i, n_j]) < prefilt_win:
+        # print('*** Minimum dimension of the resampled grid ({} pixels) is less than prefilter window size ({}).'.format(min([n_i, n_j]), prefilt_win))
+        # sys.exit(0)
+        prefilt_win = int(np.log2(min([n_i, n_j])))
+        
+    ph_grid = np.zeros((n_i, n_j), dtype = int)
+    
     if predef_flag == 'y':
         not_supported_param('predef_flag', 'y')
-        ph_grid_uw = np.zeros((n_i, n_j), dtype=int)
-        N_grid_uw = np.zeros((n_i, n_j), dtype=int)
-
-    prefilt_win = args[3]
-    if min(len(ph_grid), len(ph_grid[0])) < prefilt_win:
-        print('Minimum dimension of the resampled grid ({} pixels) is less than prefilter window size ({})'.format(
-            min(len(ph_grid), len(ph_grid[0])), prefilt_win))
-
+        # ph_grid_uw = np.zeros((n_i, n_j), dtype = int)
+        # N_grid_uw = np.zeros((n_i, n_j), dtype = int)
+        
     for i1 in range(0, n_ifg):
         if np.any(np.isreal(ph_in)):
             ph_this = np.exp(complex(0.0, 1.0) * ph_in[:, i1])
@@ -167,17 +170,17 @@ def uw_grid_wrapped(*args):
             # ph_uw_predef(ix,i1)=ph_uw_predef(ix,i1)+ph_diff; % set so ph_uw is filtered ph + integer num cycles
 
     n_ps = n_ps_grid
-    print('   Number of resampled points: {}'.format(n_ps))
+    print('*** Number of resampled points:', n_ps)
 
     nz_i_tmp = [np.nonzero(ph_grid[:, j]) for j in range(0, len(ph_grid[0]))]
     nz_i = (functools.reduce(lambda a, b: np.concatenate((a, b), axis=1), nz_i_tmp) + 1).reshape(-1, 1)
     nz_j_tmp = [np.tile(j + 1, len(nz_i_tmp[j][0])) for j in range(0, len(nz_i_tmp))]
     nz_j = functools.reduce(lambda a, b: np.concatenate((a, b), axis=0), nz_j_tmp).reshape(-1, 1)
+    
     if pix_size == 0:
         xy = xy_in
     else:
-        xy = np.concatenate(((np.array([i for i in range(1, n_ps + 1)])).reshape(-1, 1), (nz_j - 0.5) * pix_size,
-                             (nz_i - 0.5) * pix_size), axis=1).astype('int')
+        xy = np.concatenate(((np.array([i for i in range(1, n_ps + 1)])).reshape(-1, 1), (nz_j - 0.5) * pix_size, (nz_i - 0.5) * pix_size), axis=1).astype('int')
 
     ij = np.concatenate((nz_i, nz_j), axis=1)
 
@@ -197,7 +200,6 @@ def uw_grid_wrapped(*args):
         'n_ifg': n_ifg,
         'n_ps': n_ps,
         'grid_ij': grid_ij,
-        'pix_size': pix_size
-    }
-    savemat('uw_grid.mat', uw_grid)
-    uw_grid.clear()
+        'pix_size': pix_size}
+    
+    savemat('uw_grid.mat', uw_grid, oned_as = 'column')

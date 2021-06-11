@@ -1,5 +1,5 @@
 import numpy as np
-import os
+import os, sys, time
 from matplotlib.pyplot import hist
 import random
 from numpy.fft import fftshift
@@ -8,8 +8,7 @@ from scipy.io import loadmat, savemat
 
 from clap_filt import clap_filt
 from getparm import get_parm_value as getparm
-from utils import compare_objects, not_supported_param, not_supported, compare_complex_objects, \
-    compare_mat_with_number_values
+from utils import compare_objects, not_supported_param, not_supported, compare_complex_objects, compare_mat_with_number_values
 from ps_topofit import ps_topofit
 
 
@@ -26,48 +25,77 @@ def interp(ys, mul):
 
 
 def ps_est_gamma_quick(*args):
-    print("\nEstimating gamma for candidate pixels\n")
+    
+    if len(args) == 3: # To debug
+        path_to_task = args[0] + os.sep
+        path_to_patch = path_to_task + 'PATCH_' + str(args[1]) + os.sep
+    
+    else: # To essential run
+        path_to_task = os.sep.join(os.getcwd().split(os.path.sep)[:-1]) + os.sep
+        path_to_patch = os.getcwd() + os.sep
+        
+    print("* Estimating gamma for candidate pixels.")
 
-    if len(args) < 1:
-        restart_flag = 0
-    else:
-        restart_flag = args[0]
+    restart_flag = 0
 
     rho = 830000  # mean range - need only be approximately correct
     n_rand = 300000  # number of simulated random phase pixels
 
-    grid_size = getparm("filter_grid_size")[0][0][0]
-    filter_weighting = getparm("filter_weighting")[0][0]
-    n_win = getparm("clap_win")[0][0][0]
-    low_pass_wavelength = getparm("clap_low_pass_wavelength")[0][0][0]
-    clap_alpha = getparm("clap_alpha")[0][0][0]
-    clap_beta = getparm("clap_beta")[0][0][0]
-    max_topo_err = getparm("max_topo_err")[0][0][0]
-    lambda1 = getparm("lambda")[0][0][0]
-    gamma_change_convergence = getparm("gamma_change_convergence")[0][0][0]
-    gamma_max_iterations = getparm("gamma_max_iterations")[0][0][0]
-    small_baseline_flag = getparm("small_baseline_flag")[0][0]
-
+    # grid_size = getparm("filter_grid_size")[0][0][0]
+    # filter_weighting = getparm("filter_weighting")[0][0]
+    # n_win = getparm("clap_win")[0][0][0]
+    # low_pass_wavelength = getparm("clap_low_pass_wavelength")[0][0][0]
+    # clap_alpha = getparm("clap_alpha")[0][0][0]
+    # clap_beta = getparm("clap_beta")[0][0][0]
+    # max_topo_err = getparm("max_topo_err")[0][0][0]
+    # lambda1 = getparm("lambda")[0][0][0]
+    # gamma_change_convergence = getparm("gamma_change_convergence")[0][0][0]
+    # gamma_max_iterations = getparm("gamma_max_iterations")[0][0][0]
+    # small_baseline_flag = getparm("small_baseline_flag")[0][0]
+    
+    op = loadmat(path_to_task + 'parms.mat')
+    grid_size = op["filter_grid_size"][0][0]
+    filter_weighting = op["filter_weighting"]
+    n_win = op["clap_win"][0][0]
+    low_pass_wavelength = op["clap_low_pass_wavelength"][0][0]
+    clap_alpha = op["clap_alpha"][0][0]
+    clap_beta = op["clap_beta"][0][0]
+    max_topo_err = op["max_topo_err"][0][0]
+    lambda1 = op["lambda"][0][0]
+    gamma_change_convergence = op["gamma_change_convergence"][0][0]
+    gamma_max_iterations = op["gamma_max_iterations"][0][0]
+    small_baseline_flag = op["small_baseline_flag"][0][0]
+    
     if small_baseline_flag == "y":
         low_coh_thresh = 15  # equivalent to coh of 15/100
     else:
         low_coh_thresh = 31  # equivalent to coh of 31/100
 
-    freq0 = 1 / low_pass_wavelength
-    freq_i = np.arange(-(n_win) / grid_size / n_win / 2, (n_win - 1) / grid_size / n_win / 2,
-                       1 / grid_size / n_win)
-    butter_i = np.array(1 / (1 + (freq_i / freq0) ** (2 * 5)))
-    low_pass = butter_i.reshape(-1, 1) * butter_i
-    low_pass = fftshift(low_pass)
+    # freq0 = 1 / low_pass_wavelength
+    # freq_i = np.arange(-(n_win) / grid_size / n_win / 2, (n_win - 1) / grid_size / n_win / 2, 1 / grid_size / n_win)
+    # butter_i = np.array(1 / (1 + (freq_i / freq0) ** (2 * 5)))
+    # low_pass = butter_i.reshape(-1, 1) * butter_i
+    # low_pass = fftshift(low_pass)
 
-    psver = loadmat("psver.mat")["psver"][0][0]
-    psname = "ps" + str(psver) + ".mat"
-    phname = 'ph' + str(psver) + ".mat"
-    bpname = 'bp' + str(psver) + ".mat"
-    laname = 'la' + str(psver) + ".mat"
-    incname = 'inc' + str(psver) + ".mat"
-    pmname = 'pm' + str(psver) + ".mat"
-    daname = 'da' + str(psver) + ".mat"
+    freq0 = 1 / op['clap_low_pass_wavelength'].flatten().astype(float)
+    n_win = op['clap_win'].flatten().astype(int)
+    fgs = op['filter_grid_size'].flatten().astype(int)
+    freq_i = np.arange(-(n_win)/fgs/n_win/2, (n_win-2)/fgs/n_win/2+(1/fgs/n_win*0.01), 1/fgs/n_win)
+    butter_i = (1. / (1 + (freq_i / freq0)**(2*5))).reshape((1,len(freq_i)))
+    low_pass = np.dot(butter_i.reshape((len(freq_i),1)), butter_i)
+    low_pass = np.fft.fftshift(low_pass)
+    
+    # print(low_pass)
+    # sys.exit(0)
+    
+    psver = 1 # loadmat(path_to_patch + "psver.mat")["psver"][0][0]
+    psname = path_to_patch + 'ps' + str(psver) + ".mat"
+    phname = path_to_patch + 'ph' + str(psver) + ".mat"
+    bpname = path_to_patch + 'bp' + str(psver) + ".mat"
+    laname = path_to_patch + 'la' + str(psver) + ".mat"
+    incname = path_to_patch + 'inc' + str(psver) + ".mat"
+    pmname = path_to_patch + 'pm' + str(psver) + ".mat"
+    daname = path_to_patch + 'da' + str(psver) + ".mat"
 
     ps = loadmat(psname)
     bp = loadmat(bpname)
@@ -228,8 +256,7 @@ def ps_est_gamma_quick(*args):
         grid_ij = grid_ij.astype("int")
         for i in range(n_ps):
             # ph_grid(grid_ij(i,1),grid_ij(i,2),:)=ph_grid(grid_ij(i,1),grid_ij(i,2),:)+shiftdim(ph(i,:),-1)*weighting(i);
-            ph_grid[grid_ij[i, 0] - 1, grid_ij[i, 1] - 1, :] = ph_grid[grid_ij[i, 0] - 1, grid_ij[i, 1] - 1,
-                                                               :] + ph_weight[i, :]
+            ph_grid[grid_ij[i, 0] - 1, grid_ij[i, 1] - 1, :] = ph_grid[grid_ij[i, 0] - 1, grid_ij[i, 1] - 1,:] + ph_weight[i, :]
 
         for i in range(n_ifg):
             ph_filt[:, :, i] = clap_filt(ph_grid[:, :, i], clap_alpha, clap_beta, n_win * 0.75, n_win * 0.25, low_pass)
@@ -249,8 +276,7 @@ def ps_est_gamma_quick(*args):
             for i in range(n_ps):
                 psdph = ph[i, :] * np.conj(ph_patch[i, :])
                 if np.sum(psdph == 0) == 0:
-                    [Kopt, Copt, cohopt, ph_residual] = ps_topofit(psdph, bp["bperp_mat"][i, :].reshape(-1, 1),
-                                                                   n_trial_wraps, 'n')
+                    [Kopt, Copt, cohopt, ph_residual] = ps_topofit(psdph, bp["bperp_mat"][i, :].reshape(-1, 1), n_trial_wraps, 'n')
 
                     K_ps[i] = Kopt
                     C_ps[i] = Copt
@@ -280,8 +306,8 @@ def ps_est_gamma_quick(*args):
             gamma_change_save = gamma_change_rms
             coh_ps_save = coh_ps
 
-            gamma_change_convergence = getparm('gamma_change_convergence')[0][0][0]
-            gamma_max_iterations = getparm('gamma_max_iterations')[0][0][0]
+            gamma_change_convergence = op['gamma_change_convergence'].flatten()
+            gamma_max_iterations = op['gamma_max_iterations'].flatten()
 
             if np.abs(gamma_change_change) < gamma_change_convergence or i_loop >= gamma_max_iterations:
                 # figure
@@ -292,6 +318,7 @@ def ps_est_gamma_quick(*args):
                 loop_end_sw = 1
             else:
                 i_loop = i_loop + 1
+                
                 if filter_weighting == 'P-square':
                     step = 0.01 / 2
                     Na = np.histogram(coh_ps, coh_bins - step)[0]
@@ -331,6 +358,7 @@ def ps_est_gamma_quick(*args):
         else:
             loop_end_sw = 1
 
+        print('* Save estimation to:', pmname)
         savemat(pmname, {"ph_patch": ph_patch,
                          "K_ps": K_ps,
                          "C_ps": C_ps,
@@ -351,3 +379,7 @@ def ps_est_gamma_quick(*args):
                          "coh_ps_save": coh_ps_save,
                          "gamma_change_save": gamma_change_save})
 
+if __name__ == "__main__":
+    # For testing
+    test_path = 'C:\\Users\\anyuser\\Documents\\PYTHON\\stampsexport'
+    ps_est_gamma_quick(test_path, 1, 'mpi')

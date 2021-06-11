@@ -1,290 +1,190 @@
-import os, sys
+import os, sys, time
 import shutil
 from datetime import date, datetime
-from inspect import signature
 
 import numpy as np
 from scipy.io import loadmat, savemat
-from scipy.optimize import fmin, minimize
+from scipy.optimize import fmin
 
-from getparm import get_parm_value as getparm
 from ps_deramp import ps_deramp
 from ps_setref import ps_setref
+from ggf.matlab_funcs import lscov
 
-from utils import not_supported_param
+def lscov_m(A, B, w = None):
 
+    if w is None:
+        Aw = A.copy()
+        Bw = np.transpose(B.copy())
+    else:
+        W = np.sqrt(np.diag(np.array(w).flatten()))
+        Aw = np.dot(W, A)
+        Bw = np.dot(B.T, W)
+
+    x, residuals, rank, s = np.linalg.lstsq(Aw, Bw.T, rcond = 1e-10)
+    return(x)
+
+def lscov_p(A, B, w):
+    W = np.diag(w)
+    solve = (((np.linalg.inv((A.T.dot(np.linalg.inv(W)).dot(A)))).dot(A.T)).dot(np.linalg.inv(W))).dot(B)
+    return(solve)
 
 def f(x, *args):
     d = args[0]
     G = args[1]
     return sum(abs(np.array([d]).T - np.array([G.dot(x)]).T))
 
+def ps_calc_scla(*args):
+    
+    begin_time = time.time()
+    
+    if len(args) == 1: # To debug
+        path_to_task = args[0] + os.sep
+    
+    else: # To essential run
+        path_to_task = ''
+    
+    print()    
+    print('******** Stage 7-1 *********')
+    print('****** Estimate scla *******')
+    print('')
+    print('Work dir:', os.getcwd() + os.sep)
 
-def ps_calc_scla(use_small_baselines, coest_mean_vel):
-    print('');
-    print('Estimating spatially-correlated look angle error...')
+    psver = str(2) # str(loadmat(path_to_patch + 'psver.mat', squeeze_me = True)['psver'])
 
-    sig = signature(ps_calc_scla)
-    args = sig.parameters
-    if len(args) < 1:
-        use_small_baselines = 0;
-    if len(args) < 2:
-        coest_mean_vel = 0;
+    op = loadmat(path_to_task + 'parms.mat', squeeze_me = True)
+    
+    # print('Estimating spatially-correlated look angle error...')
+    
+    drop_ifg_index = op['drop_ifg_index'] # Critical point: difference between indexing 0-base in python and 1-base in matlab
+    scla_method = op['scla_method']
+    scla_deramp = op['scla_deramp']
+    subtr_tropo = op['subtr_tropo']
+    scla_drop_index = op['scla_drop_index']
+    coest_mean_vel = 1
+    
+    psname = path_to_task + 'ps' + psver + '.mat'
+    bpname = path_to_task + 'bp' + psver + '.mat'
+    meanvname = path_to_task + 'mv' + psver + '.mat'
+    ifgstdname = path_to_task + 'ifgstd' + psver + '.mat'
+    
+    phuwname = path_to_task + 'phuw' + psver + '.mat'
+    sclaname = path_to_task + 'scla' + psver + '.mat'
 
-    # TODO: Implement getparm() function
-    small_baseline_flag = getparm('small_baseline_flag')[0][0]
+    if os.path.exists(meanvname):
+        os.system('rm -f ' + meanvname)
 
-    # TODO: проверить, когда, например, drop_ifg_index=[0] индекс указан для нумерации индексов в python
-    drop_ifg_index = getparm('drop_ifg_index')[0]
+    ps = loadmat(psname, squeeze_me = True)
 
-    scla_method = getparm('scla_method')[0][0]
-    scla_deramp = getparm('scla_deramp')[0][0]
-    subtr_tropo = getparm('subtr_tropo')[0][0]
-    tropo_method = getparm('tropo_method')[0][0]
-
-    if use_small_baselines != 0:
-        not_supported_param('use_small_baselines', getparm('use_small_baselines')[0][0])
-        # if small_baseline_flag != 'y':
-        #    print('   Use small baselines requested but there are none')
-        #    sys.exit()
-
-    if use_small_baselines == 0:
-        scla_drop_index = getparm('scla_drop_index')[0];
-    else:
-        not_supported_param('use_small_baselines', getparm('use_small_baselines')[0][0])
-        # scla_drop_index = []  # getparm('sb_scla_drop_index',1);
-        # print('   Using small baseline interferograms\n')
-
-    psver = loadmat('psver.mat')['psver'][0][0]
-    psname = 'ps' + str(psver)
-    rcname = 'rc' + str(psver)
-    pmname = 'pm' + str(psver)
-    bpname = 'bp' + str(psver)
-    meanvname = 'mv' + str(psver)
-    ifgstdname = 'ifgstd' + str(psver)
-    phuwsbresname = 'phuw_sb_res' + str(psver)
-    if use_small_baselines == 0:
-        phuwname = 'phuw' + str(psver)
-        sclaname = 'scla' + str(psver)
-        apsname_old = 'aps' + str(psver)  # renamed to old
-        apsname = 'tca' + str(psver)  # the new tca option
-    else:
-        not_supported_param('use_small_baselines', getparm('use_small_baselines')[0][0])
-        # phuwname = 'phuw_sb' + str(psver)
-        # sclaname = 'scla_sb' + str(psver)
-        # apsname_old = 'aps_sb' + str(psver)  # renamed to old
-        # apsname = 'tca_sb' + str(psver)  # the new tca option
-
-    if use_small_baselines == 0:
-        if os.path.exists(meanvname + '.mat'):
-            os.system('rm -f ' + meanvname + '.mat')
-
-    ps = loadmat(psname + '.mat')
-
-    bp = {}
-    if os.path.exists(bpname + '.mat'):
-        bp = loadmat(bpname + '.mat')
+    if os.path.exists(bpname):
+        bp = loadmat(bpname, squeeze_me = True)
     else:
         bperp = ps['bperp']
-        if small_baseline_flag != 'y':
-            bperp = np.concatenate((bperp[:ps['master_ix'][0][0] - 1], bperp[ps['master_ix'][0][0]:]), axis=0)
-        bp['bperp_mat'] = np.tile(bperp.T, (ps['n_ps'][0][0], 1))
-    uw = loadmat(phuwname);
+        bperp = np.concatenate((bperp[:ps['master_ix'] - 1], bperp[ps['master_ix']:]), axis = 0)
+        bp['bperp_mat'] = np.tile(bperp.T, (ps['n_ps'], 1))
+    
+    uw = loadmat(phuwname, squeeze_me = True)
 
-    if small_baseline_flag == 'y' and use_small_baselines == 0:
-        not_supported_param('small_baseline_flag', getparm('small_baseline_flag')[0][0])
-        # unwrap_ifg_index = np.arange(0, ps['n_image'][0][0])
-        # n_ifg = ps['n_image'][0][0]
-    else:
-        unwrap_ifg_index = np.setdiff1d(np.arange(0, ps['n_ifg'][0][0]), drop_ifg_index)
-        n_ifg = ps['n_ifg'][0][0]
+    unwrap_ifg_index = np.setdiff1d(np.arange(0, ps['n_ifg']), drop_ifg_index)
 
     if subtr_tropo == 'y':
-        not_supported_param('subtr_tropo', getparm('subtr_tropo')[0][0])
-        # Remove the tropo correction - TRAIN support
-        # recompute the APS inversion on the fly as user migth have dropped
-        # SB ifgs before and needs new update of the SM APS too.
-
-        # if exist(apsname,'file')~=2
-        # the tca file does not exist. See in case this is SM if it needs
-        # to be inverted
-        #    if strcmpi(apsname,['./tca',num2str(psver)])
-        #        if strcmpi(getparm('small_baseline_flag'),'y')
-        #           sb_invert_aps(tropo_method)
-        #        end
-        #     end
-        #    aps = load(apsname);
-        #    [aps_corr,fig_name_tca,tropo_method] = ps_plot_tca(aps,tropo_method);
-        #    uw.ph_uw=uw.ph_uw-aps_corr;
-        # end
+        print('* Not supported param <subtr_tropo> =', op['subtr_tropo'])
+        sys.exit(0)
 
     if scla_deramp == 'y':
-        print('\n   deramping ifgs...\n')
+        print('* Deramping ifgs.')
 
         [ph_all, ph_ramp] = ps_deramp(ps.copy(), uw['ph_uw'].copy(), 1)
         uw['ph_uw'] = np.subtract(uw['ph_uw'], ph_ramp)
-
-        # ph_ramp=zeros(ps.n_ps,n_ifg,'single');
-        # G=double([ones(ps.n_ps,1),ps.xy(:,2),ps.xy(:,3)]);
-        # for i=1:length(unwrap_ifg_index)
-        #   d=uw.ph_uw(:,unwrap_ifg_index(i));
-        #   m=G\double(d(:));
-        #   ph_this_ramp=G*m;
-        #   uw.ph_uw(:,unwrap_ifg_index(i))=uw.ph_uw(:,unwrap_ifg_index(i))-ph_this_ramp; % subtract ramp
-        #   ph_ramp(:,unwrap_ifg_index(i))=ph_this_ramp;
-        # end
 
     else:
         ph_ramp = []
 
     unwrap_ifg_index = np.setdiff1d(unwrap_ifg_index, scla_drop_index)
 
-    # Check with Andy:
-    # 1) should this not be placed before the ramp computation.
-    # 2) if this is spatial fitlering in time - not compatible with TRAIN
-    # if exist([apsname_old,'.mat'],'file')
-    #   if strcmpi(subtr_tropo,'y')
-    #       fprintf(['You are removing atmosphere twice. Do not do this, either do:\n use ' apsname_old ' with subtr_tropo=''n''\n remove ' apsname_old ' use subtr_tropo=''y''\n'])
-    #   end
-    #   aps=load(apsname_old);
-    #   uw.ph_uw=uw.ph_uw-aps.ph_aps_slave;
-    # end
+    ref_ps = ps_setref({}, path_to_task, op)
+    uw['ph_uw'] = np.subtract(uw['ph_uw'], np.tile(np.nanmean(uw['ph_uw'][ref_ps, :], 0), (ps['n_ps'], 1)))
 
-    ref_ps = ps_setref()
-    uw['ph_uw'] = np.subtract(uw['ph_uw'], np.tile(np.nanmean(uw['ph_uw'][ref_ps, :], 0), (ps['n_ps'][0][0], 1)))
+    bperp_mat = np.append(np.append(bp['bperp_mat'][:, 0:ps['master_ix'] - 1], np.zeros((ps['n_ps'], 1)), 1), bp['bperp_mat'][:, ps['master_ix'] - 1:], 1)
 
-    if use_small_baselines == 0:
-        if small_baseline_flag == 'y':
-            not_supported_param('small_baseline_flag', getparm('small_baseline_flag')[0][0])
-            # bperp_mat=zeros(ps.n_ps,ps.n_image,'single');
-            # G=zeros(ps.n_ifg,ps.n_image);
-            # for i=1:ps.n_ifg
-            #    G(i,ps.ifgday_ix(i,1))=-1;
-            #    G(i,ps.ifgday_ix(i,2))=1;
-            # end
-            # if isfield(uw,'unwrap_ifg_index_sm')
-            #    unwrap_ifg_index=setdiff(uw.unwrap_ifg_index_sm,scla_drop_index);
-            # end
-            # unwrap_ifg_index=setdiff(unwrap_ifg_index,ps.master_ix);
-
-            # G=G(:,unwrap_ifg_index);
-            # bperp_some=[G\double(bp.bperp_mat')]';
-            # bperp_mat(:,unwrap_ifg_index)=bperp_some;
-            # clear bperp_some
-        else:
-            bperp_mat = np.append(
-                np.append(bp['bperp_mat'][:, 0:ps['master_ix'][0][0] - 1], np.zeros((ps['n_ps'][0][0], 1)), 1),
-                bp['bperp_mat'][:, ps['master_ix'][0][0] - 1:], 1)
-
-        day = np.diff((ps['day'][unwrap_ifg_index]), axis=0)
-        ph = np.diff(uw['ph_uw'][:, unwrap_ifg_index], 1)
-        bperp = np.diff(bperp_mat[:, unwrap_ifg_index], 1)
-
-    else:
-        not_supported_param('use_small_baselines', getparm('use_small_baselines')[0][0])
-        # bperp_mat=bp.bperp_mat;
-        # bperp=bperp_mat(:,unwrap_ifg_index);
-        # day=ps.ifgday(unwrap_ifg_index,2)-ps.ifgday(unwrap_ifg_index,1);
-        # ph=double(uw.ph_uw(:,unwrap_ifg_index));
-    bp.clear()
+    day = np.diff((ps['day'][unwrap_ifg_index]), axis = 0)
+    ph = np.diff(uw['ph_uw'][:, unwrap_ifg_index], 1)
+    bperp = np.diff(bperp_mat[:, unwrap_ifg_index], 1)
 
     bprint = np.mean(bperp, 0)
-    print('\nPS_CALC_SCLA: {} ifgs used in estimation:'.format(len(ph[0])))
+    # print('PS_CALC_SCLA: {} ifgs used in estimation:'.format(len(ph[0])))
 
     for i in range(len(ph[0])):
-        if use_small_baselines != 0:
-            not_supported_param('use_small_baselines', getparm('use_small_baselines')[0][0])
-            # logit(sprintf('   %s to %s %5d days %5d m',datestr(ps.ifgday(unwrap_ifg_index(i),1)),datestr(ps.ifgday(unwrap_ifg_index(i),2)),day(i),round(bprint(i))))
-        else:
-            print('PS_CALC_SCLA:     {} to {} {} days {} m'.format(
-                date.fromordinal(ps['day'][unwrap_ifg_index[i]][0] - 366),
-                date.fromordinal(ps['day'][unwrap_ifg_index[i + 1]][0] - 366),
-                day[i][0], np.round(bprint[i])))
+        t1 = date.fromordinal(ps['day'][unwrap_ifg_index[i]] - 366)
+        t2 = date.fromordinal(ps['day'][unwrap_ifg_index[i + 1]] - 366)
+        t3 = day[i]
+        t4 = np.round(bprint[i])
+        # print('PS_CALC_SCLA:', t1, 'to', t2, t3, 'days', t4, 'm')
 
-    K_ps_uw = np.zeros((ps['n_ps'][0][0], 1))
+    K_ps_uw = np.zeros((ps['n_ps'], 1))
 
+    (s1, s2) = np.shape(ph)
+    t1 = np.ones((s2, 1))
+    t2 = np.reshape(np.mean(bperp, axis = 0), (s2, 1))
+    t3 = np.reshape(day, (s2, 1))
+    
     if coest_mean_vel == 0 or len(unwrap_ifg_index) < 4:
-        G = np.insert(np.ones((len(ph[0]), 1)), 1, np.mean(bperp, 0), axis=1)
+        G = np.hstack((t1, t2))
     else:
-        G = np.append(np.insert(np.ones((len(ph[0]), 1)), 1, np.mean(bperp, 0), axis=1), day, axis=1)
+        G = np.hstack((t1, t2, t3))
 
-    ifg_vcm = np.eye(ps['n_ifg'][0][0]);
+    ifg_vcm = np.eye(ps['n_ifg'])
 
-    if small_baseline_flag == 'y':
-        not_supported_param('small_baseline_flag', getparm('small_baseline_flag')[0][0])
-        # if use_small_baselines==0
-        #    phuwres=load(phuwsbresname,'sm_cov');
-        #    if isfield(phuwres,'sm_cov')
-        #        ifg_vcm=phuwres.sm_cov;
-        #    end
-        # else
-        #    phuwres=load(phuwsbresname,'sb_cov');
-        #    if isfield(phuwres,'sb_cov')
-        #        ifg_vcm=phuwres.sb_cov;
-        #    end
-    else:
-        if os.path.exists(ifgstdname + '.mat'):
-            ifgstd = loadmat(ifgstdname + '.mat');
-            ifg_vcm = np.diag(np.power(ifgstd['ifg_std'] * np.pi / 180, 2).T[0])
-            ifgstd.clear()
+    if os.path.exists(ifgstdname):
+        ifgstd = loadmat(ifgstdname, squeeze_me = True)
+        ifg_vcm = np.diag(ifgstd['ifg_std'] * np.pi / 180) ** 2
 
-    if use_small_baselines == 0:
-        ifg_vcm_use = np.eye(len(ph[0]))
-    else:
-        not_supported_param('use_small_baselines', getparm('use_small_baselines')[0][0])
-        # ifg_vcm_use=ifg_vcm(unwrap_ifg_index,unwrap_ifg_index);
-
-    # solving x = inv(A'*inv(V)*A)*A'*inv(V)*B, L2-norm
-    m = (((np.linalg.inv((G.T.dot(np.linalg.inv(ifg_vcm_use)).dot(G)))).dot(G.T)).dot(np.linalg.inv(ifg_vcm_use))).dot(
-        ph.T)
-    K_ps_uw = (np.array(m[1, :])[np.newaxis]).T
-    if coest_mean_vel != 0:
-        v_ps_uw = (np.array(m[2, :])[np.newaxis]).T
-
+    ifg_vcm_use = np.ones(s2)
+    
+    m = lscov(G, ph.T, ifg_vcm_use)
+    m = np.reshape(m, (3, len(m) // 3))
+    K_ps_uw = m.T[:,1].flatten()
+    
     if scla_method == 'L1':
-        print('\n SCLA Method L1-norm')
-        for i in range(0, ps['n_ps'][0][0]):
+        print('* SCLA Method L1-norm.')
+        for i in range(ps['n_ps']):
             d = ph[i, :]
             m2 = m[:, i]
-            m2 = fmin(f, m2, args=(d, G), disp=False)
+            m2 = fmin(f, m2, args = (d, G), disp = False)
             K_ps_uw[i] = m2[1]
-            if i % 10000 == 0:
-                print('{} of {} pixels processed'.format(i, ps['n_ps'][0][0]))
 
-    ph_scla = np.multiply(np.tile(K_ps_uw, (1, len(bperp_mat[0]))), bperp_mat)
+    (s1, s2) = np.shape(bperp_mat)
+    ph_scla = np.tile(np.reshape(K_ps_uw, (s1, 1)), (1, s2)) * bperp_mat
 
-    if use_small_baselines == 0:
-        unwrap_ifg_index = np.setdiff1d(unwrap_ifg_index, ps['master_ix'][0][0] - 1);
-        if coest_mean_vel == 0:
-            C_ps_uw = np.array([np.mean(uw['ph_uw'][:, unwrap_ifg_index] - ph_scla[:, unwrap_ifg_index], 1)]).T
-        else:
-            # !!!!!!!!!!! ВАЖНО !!!!!!!!!!
-            # TODO: В matlab индексация идет с 1 и поэтому ps['master_ix'][0][0] = master_ix (например, 5), в python это должно быть master_ix-1 (например, 4)
-            # !!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            G = np.hstack((np.array([np.ones(len(unwrap_ifg_index))]).T,
-                           ps['day'][unwrap_ifg_index] - ps['day'][ps['master_ix'] - 1][0]))
-            # solving x = inv(A'*inv(V)*A)*A'*inv(V)*B, L2-norm
-            A = G
-            B = np.array(uw['ph_uw'][:, unwrap_ifg_index] - ph_scla[:, unwrap_ifg_index]).T
-            V = ifg_vcm[unwrap_ifg_index, :][:, unwrap_ifg_index]
-            m = (((np.linalg.inv((A.T.dot(np.linalg.inv(V)).dot(A)))).dot(A.T)).dot(np.linalg.inv(V))).dot(B)
-            C_ps_uw = np.array([m[0, :]]).T
+    unwrap_ifg_index = np.setdiff1d(unwrap_ifg_index, ps['master_ix'] - 1)
+    if coest_mean_vel == 0:
+        C_ps_uw = np.array([np.mean(uw['ph_uw'][:, unwrap_ifg_index] - ph_scla[:, unwrap_ifg_index], 1)]).T
     else:
-        print("You set the param use_small_baselines={}, but not supported yet.".format(
-            getparm('use_small_baselines')[0][0]))
-        sys.exit(0)
-        # C_ps_uw=zeros(ps.n_ps,1);
-
-    if os.path.exists(sclaname + '.mat'):
-        olddatenum = os.path.getmtime(sclaname + '.mat')
-        shutil.move(sclaname + '.mat',
-                    'tmp_' + sclaname + datetime.fromtimestamp(olddatenum).strftime('_%Y%m%d_%H%M%S') + '.mat')
+        t1 = np.reshape(np.ones(len(unwrap_ifg_index)), (len(unwrap_ifg_index), 1))
+        t2 = np.reshape(ps['day'][unwrap_ifg_index] - ps['day'][ps['master_ix'] - 1], (len(unwrap_ifg_index), 1))
+        G = np.hstack((t1, t2))
+        
+        B = np.transpose(np.array(uw['ph_uw'][:, unwrap_ifg_index] - ph_scla[:, unwrap_ifg_index]))
+        v = (ifgstd['ifg_std'][unwrap_ifg_index] * np.pi / 180) ** 2
+        
+        m = lscov_p(G, B, v).T
+        C_ps_uw = m[:,0].flatten()
 
     scla = {
         'ph_scla': ph_scla,
         'K_ps_uw': K_ps_uw,
         'C_ps_uw': C_ps_uw,
         'ph_ramp': ph_ramp,
-        'ifg_vcm': ifg_vcm
-    }
-    savemat(sclaname + '.mat', scla)
+        'ifg_vcm': ifg_vcm}  
+
+    if os.path.exists(sclaname):
+        olddatenum = os.path.getmtime(sclaname)
+        shutil.move(sclaname, sclaname + datetime.fromtimestamp(olddatenum).strftime('_%Y%m%d_%H%M%S'))
+        
+    savemat(sclaname, scla, oned_as = 'column')
+    
+    print('Done at', int(time.time() - begin_time), 'sec')
+    
+if __name__ == "__main__":
+    # For testing
+    test_path = 'C:\\Users\\Ryzen\\Documents\\PYTHON\\stampsexport'
+    ps_calc_scla(test_path)

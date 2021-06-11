@@ -1,4 +1,4 @@
-import os, sys
+import os, sys, time
 import numpy as np
 
 from scipy.io import loadmat, savemat
@@ -7,250 +7,211 @@ from uw_3d import uw_3d
 
 from utils import compare_objects, not_supported_param, compare_mat_with_number_values
 
+def tr(matrix):
+    out = np.transpose(matrix)
+    return(out)
 
-def ps_unwrap():
-    print('Phase-unwrapping...\n')
+def v2c(v):
+    m = len(v)
+    out = np.reshape(v, (m, 1))
+    return(out)
 
-    small_baseline_flag = getparm('small_baseline_flag')[0][0]
-    unwrap_patch_phase = getparm('unwrap_patch_phase')[0][0]
-    scla_deramp = getparm('scla_deramp')[0][0]
-    subtr_tropo = getparm('subtr_tropo')[0][0]
-    aps_name = getparm('tropo_method')[0][0]
+def v2r(v):
+    m = len(v)
+    out = np.reshape(v, (1, m))
+    return(out)
 
-    psver = loadmat('psver.mat')['psver'][0][0]
-    psname = 'ps' + str(psver)
-    rcname = 'rc' + str(psver)
-    pmname = 'pm' + str(psver)
-    bpname = 'bp' + str(psver)
-    goodname = 'phuw_good' + str(psver)
+def ps_unwrap(*args):
+    
+    begin_time = time.time()
+    
+    if len(args) == 1: # To debug
+        path_to_task = args[0] + os.sep
+    
+    else: # To essential run
+        path_to_task = ''
+    
+    print()    
+    print('********** Stage 6 *********')
+    print('****** Unwrap phases *******')
+    print('')
+    print('Work dir:', os.getcwd() + os.sep)
+    
+    op = loadmat(path_to_task + 'parms.mat', squeeze_me = True)
+
+    psver = str(2) # str(loadmat(path_to_patch + 'psver.mat', squeeze_me = True)['psver'])
+
+    small_baseline_flag = op['small_baseline_flag']
+    unwrap_patch_phase = op['unwrap_patch_phase']
+    scla_deramp = op['scla_deramp']
+    subtr_tropo = op['subtr_tropo']
+    aps_name = op['tropo_method']
+
+    psname = path_to_task + 'ps' + psver + '.mat'
+    rcname = path_to_task + 'rc' + psver + '.mat'
+    pmname = path_to_task + 'pm' + psver + '.mat'
+    bpname = path_to_task + 'bp' + psver + '.mat'
+    goodname = path_to_task + 'phuw_good' + psver + '.mat'
 
     if small_baseline_flag != 'y':
-        sclaname = 'scla_smooth' + str(psver)
-        apsname = 'tca' + str(psver)
-        phuwname = 'phuw' + str(psver)
+        sclaname = path_to_task + 'scla_smooth' + psver + '.mat'
+        apsname = path_to_task + 'tca' + psver + '.mat'
+        phuwname = path_to_task + 'phuw' + psver + '.mat'
     else:
-        not_supported_param('small_baseline_flag', getparm('small_baseline_flag')[0][0])
-        # sclaname=['scla_smooth_sb',num2str(psver)];
-        # apsname=['tca_sb',num2str(psver)];
-        # phuwname=['phuw_sb',num2str(psver),'.mat'];
+        print('* Not supported param [small_baseline_flag] = ', op['small_baseline_flag'])
+        sys.exit(0)
+        
+    ps = loadmat(psname, squeeze_me = True);
 
-    ps = loadmat(psname + '.mat');
+    drop_ifg_index = op['drop_ifg_index']
+    unwrap_ifg_index = np.setdiff1d(np.arange(ps['n_ifg']), drop_ifg_index - 1)
 
-    drop_ifg_index = getparm('drop_ifg_index')[0]
-    unwrap_ifg_index = np.setdiff1d(np.arange(0, ps['n_ifg'][0][0]), drop_ifg_index)
-
-    bp = {}
-    if os.path.exists(bpname + '.mat'):
-        bp = loadmat(bpname + '.mat')
+    if os.path.exists(bpname):
+        bp = loadmat(bpname, squeeze_me = True)
     else:
         bperp = ps['bperp']
         if small_baseline_flag != 'y':
-            bperp = np.concatenate((bperp[:ps['master_ix'][0][0] - 1], bperp[ps['master_ix'][0][0]:]), axis=0)
-        bp['bperp_mat'] = np.tile(bperp.T, (ps['n_ps'][0][0], 1))
+            bperp = np.concatenate((bperp[:ps['master_ix']], bperp[ps['master_ix']:]), axis = 0)
+        
+        bp['bperp_mat'] = np.tile(bperp.T, (ps['n_ps'], 1))
 
     if small_baseline_flag != 'y':
-        bperp_mat = np.concatenate((bp['bperp_mat'][:, 0:ps['master_ix'][0][0] - 1],
-                                    np.zeros(ps['n_ps'][0][0]).reshape(-1, 1),
-                                    bp['bperp_mat'][:, ps['master_ix'][0][0] - 1:]), axis=1)
+        bperp_mat = np.concatenate((bp['bperp_mat'][:, :ps['master_ix'] - 1], np.zeros(ps['n_ps']).reshape(-1, 1), bp['bperp_mat'][:, ps['master_ix'] - 1:]), axis = 1)
     else:
-        not_supported_param('small_baseline_flag', getparm('small_baseline_flag')[0][0])
-        # bperp_mat=bp.bperp_mat;
+        sys.exit(0)
 
     if unwrap_patch_phase == 'y':
-        pm = loadmat(pmname);
-        ph_w = np.divide(pm['ph_patch'], np.abs(pm['ph_patch']))
-        pm.clear()
+        pm = loadmat(pmname, squeeze_me = True)
+        ph_w = pm['ph_patch'] / np.abs(pm['ph_patch'])
+
         if small_baseline_flag != 'y':
-            ph_w = np.concatenate((ph_w[:, 0:ps['master_ix'][0][0] - 1], np.ones((ps['n_ps'][0][0], 1)),
-                                   ph_w[:, ps['master_ix'][0][0] - 1:]), axis=1)
+            ph_w = np.concatenate((ph_w[:, :ps['master_ix'] - 1], np.ones((ps['n_ps'], 1)), ph_w[:, ps['master_ix'] - 1:]), axis = 1)
     else:
-        rc = loadmat(rcname + '.mat')
+        rc = loadmat(rcname, squeeze_me = True)
         ph_w = rc['ph_rc']
-        rc.clear()
-        if os.path.exists(pmname + '.mat'):
-            pm = loadmat(pmname + '.mat')
+
+        if os.path.exists(pmname):
+            pm = loadmat(pmname, squeeze_me = True)
             if 'K_ps' in pm.keys():
-                if bool(pm['K_ps'][0]):
-                    ph_w = np.multiply(ph_w, np.exp(
-                        np.multiply(complex(0.0, 1.0) * np.tile(pm['K_ps'], (1, ps['n_ifg'][0][0])), bperp_mat)))
+                if len(pm['K_ps']) != 0:
+                    ph_w = np.multiply(ph_w, np.exp(np.multiply(complex(0.0, 1.0) * np.tile(v2c(pm['K_ps']), (1, ps['n_ifg'])), bperp_mat)))
 
     ix = np.array([ph_w[i, :] != 0 for i in range(len(ph_w))])
-    ph_w[ix] = np.divide(ph_w[ix], np.abs(ph_w[ix]))
+    ph_w[ix] = ph_w[ix] / np.abs(ph_w[ix])
 
     scla_subtracted_sw = 0
     ramp_subtracted_sw = 0
 
-    options = {'master_day': ps['master_day'][0][0]}
-    unwrap_hold_good_values = getparm('unwrap_hold_good_values')[0][0]
-    if small_baseline_flag != 'y' or os.path.exists(phuwname + '.mat'):
+    options = {'master_day': ps['master_day']}
+    unwrap_hold_good_values = op['unwrap_hold_good_values']
+    if small_baseline_flag != 'y' or os.path.exists(phuwname):
         unwrap_hold_good_values = 'n';
-        print('Code to hold good values skipped')
+        print('* Code to hold good values skipped')
 
     if unwrap_hold_good_values == 'y':
-        not_supported_param('unwrap_hold_good_values', getparm('unwrap_hold_good_values')[0][0])
-        # sb_identify_good_pixels
-        # options.ph_uw_predef=nan(size(ph_w),'single');
-        # uw=load(phuwname);
-        # good=load(goodname);
-        # if ps.n_ps==size(good.good_pixels,1) & ps.n_ps==size(uw.ph_uw,1)
-        #    options.ph_uw_predef(good.good_pixels)=uw.ph_uw(good.good_pixels);
-        # else
-        #    fprintf('   wrong number of PS in keep good pixels - skipped...\n')
-        # end
-        # clear uw good;
+        print('* Not supported param [unwrap_hold_good_values] = ', unwrap_hold_good_values)
+        sys.exit(0)
 
-    if small_baseline_flag != 'y' and os.path.exists(sclaname + '.mat'):
-        print('   subtracting scla and master aoe...\n')
-        scla = loadmat(sclaname + '.mat')
-        if len(scla['K_ps_uw']) == ps['n_ps'][0][0]:
+    if small_baseline_flag != 'y' and os.path.exists(sclaname):
+        print('* Subtracting scla and master aoe...')
+        scla = loadmat(sclaname, squeeze_me = True)
+        if len(scla['K_ps_uw']) == ps['n_ps']:
             scla_subtracted_sw = 1
-            ph_w = np.multiply(ph_w, np.exp(
-                np.multiply(complex(0.0, -1.0) * np.tile(scla['K_ps_uw'], (1, ps['n_ifg'][0][0])), bperp_mat)))
-            ph_w = np.multiply(ph_w, np.tile(np.exp(complex(0.0, -1.0) * scla['C_ps_uw']), (1, ps['n_ifg'][0][0])))
+            ph_w = ph_w * np.exp(np.multiply(complex(0.0, -1.0) * np.tile(v2c(scla['K_ps_uw']), (1, ps['n_ifg'])), bperp_mat))
+            ph_w = np.multiply(ph_w, np.tile(np.exp(complex(0.0, -1.0) * v2c(scla['C_ps_uw'])), (1, ps['n_ifg'])))
 
-            if scla_deramp == 'y' and 'ph_ramp' in scla.keys() and len(scla['ph_ramp']) == ps['n_ps'][0][0]:
+            if scla_deramp == 'y' and 'ph_ramp' in scla.keys() and len(scla['ph_ramp']) == ps['n_ps']:
                 ramp_subtracted_sw = 1
-                ph_w = np.multiply(ph_w, np.exp(complex(0.0, -1.0) * scla['ph_ramp']))
+                ph_w = ph_w * np.exp(complex(0.0, -1.0) * scla['ph_ramp'])
         else:
-            print('   wrong number of PS in scla - subtraction skipped...\n')
-            os.remove(sclaname + '.mat')
-        scla.clear()
+            print('* Wrong number of PS in scla - subtraction skipped')
+            os.remove(sclaname)
 
-    if small_baseline_flag == 'y' and os.path.exists(sclaname + '.mat'):
-        not_supported_param('small_baseline_flag', getparm('small_baseline_flag')[0][0])
-    #    fprintf('   subtracting scla...\n')
-    #    scla=load(sclaname);
-    #    if size(scla.K_ps_uw,1)==ps.n_ps
-    #        scla_subtracted_sw=1;
-    #        ph_w=ph_w.*exp(-j*repmat(scla.K_ps_uw,1,ps.n_ifg).*bperp_mat); % subtract spatially correlated look angle error
-    #        if unwrap_hold_good_values=='y'
-    #            options.ph_uw_predef=options.ph_uw_predef-repmat(scla.K_ps_uw,1,ps.n_ifg).*bperp_mat; % subtract spatially correlated look angle error
-    #        end
-    #        if strcmpi(scla_deramp,'y') & isfield(scla,'ph_ramp') & size(scla.ph_ramp,1)==ps.n_ps
-    #           ramp_subtracted_sw=1;
-    #           ph_w=ph_w.*exp(-j*scla.ph_ramp); % subtract orbital ramps
-    #           if unwrap_hold_good_values=='y'
-    #               options.ph_uw_predef=options.ph_uw_predef-scla.ph_ramp;
-    #           end
-    #       end
-    #   else
-    #       fprintf('   wrong number of PS in scla - subtraction skipped...\n')
-    #       delete([sclaname,'.mat'])
-    #   end
-    #   clear scla
-    # end
+    if small_baseline_flag == 'y' and os.path.exists(sclaname):
+        print('* Not supported param [small_baseline_flag] = ', small_baseline_flag)
+        sys.exit(0)
 
-    bp.clear()
+    if os.path.exists(apsname) and subtr_tropo == 'y':
+        print('* Not supported param [subtr_tropo] = ', subtr_tropo)
+        sys.exit(0)
 
-    if os.path.exists(apsname + '.mat') and subtr_tropo == 'y':
-        not_supported_param('subtr_tropo', getparm('subtr_tropo')[0][0])
-    #    fprintf('   subtracting slave aps...\n')
-    #    aps=load(apsname);
-    #    [aps_corr,fig_name_tca,aps_flag] = ps_plot_tca(aps,aps_name);
+    options['time_win'] = op['unwrap_time_win']
+    options['unwrap_method'] = op['unwrap_method']
+    options['grid_size'] = op['unwrap_grid_size']
+    options['prefilt_win'] = op['unwrap_gold_n_win']
+    options['goldfilt_flag'] = op['unwrap_prefilter_flag']
+    options['gold_alpha'] = op['unwrap_gold_alpha']
+    options['la_flag'] = op['unwrap_la_error_flag']
+    options['scf_flag'] = op['unwrap_spatial_cost_func_flag']
 
-    #   ph_w=ph_w.*exp(-j*aps_corr);
-    #    if unwrap_hold_good_values=='y'
-    #        options.ph_uw_predef=options.ph_uw_predef-aps_corr;
-    #   end
-    #   clear aps
-
-    options['time_win'] = getparm('unwrap_time_win')[0][0][0]
-    options['unwrap_method'] = getparm('unwrap_method')[0][0]
-    options['grid_size'] = getparm('unwrap_grid_size')[0][0][0]
-    options['prefilt_win'] = getparm('unwrap_gold_n_win')[0][0][0]
-    options['goldfilt_flag'] = getparm('unwrap_prefilter_flag')[0][0]
-    options['gold_alpha'] = getparm('unwrap_gold_alpha')[0][0][0]
-    options['la_flag'] = getparm('unwrap_la_error_flag')[0][0]
-    options['scf_flag'] = getparm('unwrap_spatial_cost_func_flag')[0][0]
-
-    max_topo_err = getparm('max_topo_err')[0][0][0]
-    _lambda = getparm('lambda')[0][0][0]
+    max_topo_err = op['max_topo_err']
+    _lambda = op['lambda']
 
     rho = 830000
     if 'mean_incidence' in ps.keys():
-        inc_mean = ps['mean_incidence'][0][0]
+        inc_mean = ps['mean_incidence']
     else:
-        laname = 'la' + str(psver)
-        if os.path.exists(laname + '.mat'):
-            la = loadmat(laname + '.mat')
+        laname = path_to_task + 'la' + str(psver) + '.mat'
+        if os.path.exists(laname):
+            la = loadmat(laname, squeeze_me = True)
             inc_mean = np.mean(la['la']) + 0.052
-            la.clear()
         else:
             inc_mean = 21 * np.pi / 180.0
     max_K = max_topo_err / (_lambda * rho * np.sin(inc_mean) / 4 / np.pi)
 
     bperp_range = np.amax(ps['bperp']) - np.amin(ps['bperp'])
     options['n_trial_wraps'] = (bperp_range * max_K / (2 * np.pi))
-    print('n_trial_wraps={}'.format(options['n_trial_wraps']))
+    print('* Value n_trial_wraps = ', options['n_trial_wraps'])
 
     if small_baseline_flag == 'y':
-        not_supported_param('small_baseline_flag', getparm('small_baseline_flag')[0][0])
-        # %options.lowfilt_flag='y';
-        # options.lowfilt_flag='n';
-        # ifgday_ix=ps.ifgday_ix;
-        # day=ps.day-ps.master_day;
+        sys.exit(0)
+
     else:
         lowfilt_flag = 'n'
-        ifgday_ix = np.concatenate((np.ones((ps['n_ifg'][0][0], 1)) * ps['master_ix'],
-                                    np.array([x for x in range(ps['n_ifg'][0][0])]).reshape(-1, 1)), axis=1).astype(
-            'int')
+        ifgday_ix = np.concatenate((np.ones((ps['n_ifg'], 1)) * ps['master_ix'], np.array([x for x in range(ps['n_ifg'])]).reshape(-1, 1)), axis = 1).astype('int')
         master_ix = np.sum(ps['master_day'] > ps['day']) + 1
         unwrap_ifg_index = np.setdiff1d(unwrap_ifg_index, master_ix - 1)
         day = ps['day'] - ps['master_day']
 
     if unwrap_hold_good_values == 'y':
-        not_supported_param('small_baseline_flag', getparm('small_baseline_flag')[0][0])
-        # options.ph_uw_predef=options.ph_uw_predef(:,unwrap_ifg_index);
+        sys.exit(0)
 
-    ph_uw_some, msd_some = uw_3d(ph_w[:, unwrap_ifg_index], ps['xy'], day, ifgday_ix[unwrap_ifg_index, :],
-                                 ps['bperp'][unwrap_ifg_index], options)
+    v1 = ph_w[:, unwrap_ifg_index]
+    v2 = ps['xy']
+    v3 = v2c(day)
+    v4 = ifgday_ix[unwrap_ifg_index, :]
+    v5 = ps['bperp'][unwrap_ifg_index]
+    ph_uw_some, msd_some = uw_3d(v1, v2, v3, v4, v5, options)
 
-    ph_uw = np.zeros((ps['n_ps'][0][0], ps['n_ifg'][0][0]))
-    msd = np.zeros((ps['n_ifg'][0][0], 1))
+    ph_uw = np.zeros((ps['n_ps'], ps['n_ifg']))
+    msd = np.zeros((ps['n_ifg'], 1))
     ph_uw[:, unwrap_ifg_index] = ph_uw_some
     msd[unwrap_ifg_index] = msd_some
 
     if scla_subtracted_sw == 1 and small_baseline_flag != 'y':
-        print('Adding back SCLA and master AOE...\n')
-        scla = loadmat(sclaname + '.mat')
-        ph_uw = ph_uw + (np.multiply(np.tile(scla['K_ps_uw'], (1, ps['n_ifg'][0][0])), bperp_mat))
-        ph_uw = ph_uw + np.tile(scla['C_ps_uw'], (1, ps['n_ifg'][0][0]))
+        print('* Adding back SCLA and master AOE')
+        scla = loadmat(sclaname, squeeze_me = True)
+        ph_uw = ph_uw + (np.multiply(np.tile(v2c(scla['K_ps_uw']), (1, ps['n_ifg'])), bperp_mat))
+        ph_uw = ph_uw + np.tile(v2c(scla['C_ps_uw']), (1, ps['n_ifg']))
         if ramp_subtracted_sw:
             ph_uw = ph_uw + scla['ph_ramp']
 
-        scla.clear()
-        bp.clear()
-
     if scla_subtracted_sw == 1 and small_baseline_flag == 'y':
         not_supported_param('small_baseline_flag', 'y')
-        # fprintf('Adding back SCLA...\n')
-        # scla=load(sclaname);
-        # ph_uw=ph_uw+(repmat(scla.K_ps_uw,1,ps.n_ifg).*bperp_mat); % add back spatially correlated look angle error
-        # if ramp_subtracted_sw
-        #    ph_uw=ph_uw+scla.ph_ramp; % add back orbital ramps
-        # end
-        # clear bp scla
 
-    if os.path.exists(apsname + '.mat') and subtr_tropo == 'y':
+    if os.path.exists(apsname) and subtr_tropo == 'y':
         not_supported_param('subtr_tropo', 'y')
-        # fprintf('Adding back slave APS...\n')
-        # aps=load(apsname);
-        # [aps_corr,fig_name_tca,aps_flag] = ps_plot_tca(aps,aps_name);
-        # ph_uw=ph_uw+aps_corr;
-        # clear aps
 
     if unwrap_patch_phase == 'y':
         not_supported_param('unwrap_patch_phase', 'y')
-        # pm=load(pmname);
-        # ph_w=pm.ph_patch./abs(pm.ph_patch);
-        # clear pm
-        # if ~strcmpi(small_baseline_flag,'y')
-        #    ph_w=[ph_w(:,1:ps.master_ix-1),zeros(ps.n_ps,1),ph_w(:,ps.master_ix:end)];
-        # end
-        # rc=load(rcname);
-        # ph_uw=ph_uw+angle(rc.ph_rc.*conj(ph_w));
 
-    ph_uw[:, np.setdiff1d(np.array([*range(ps['n_ifg'][0][0])]), unwrap_ifg_index)] = 0
+    ph_uw[:, np.setdiff1d(np.array([*range(ps['n_ifg'])]), unwrap_ifg_index)] = 0
 
-    phuw2 = {'ph_uw': ph_uw, 'msd': msd}
-    savemat(phuwname + '.mat', phuw2)
+    savemat(phuwname, {'ph_uw': ph_uw, 'msd': msd})
+
+    print('Done at', int(time.time() - begin_time), 'sec')
+
+if __name__ == "__main__":
+    # For testing
+    test_path = 'C:\\Users\\Ryzen\\Documents\\PYTHON\\stampsexport'
+    ps_unwrap(test_path)    

@@ -4,12 +4,11 @@ import numpy as np
 
 from utils import compare_objects
 
-
 def writecpx(*args):
-    # params: fname,vname,precision,endian
-
+    # params: fname, vname, precision, endian 
+    
     if len(args) < 2:
-        print('syntax is writecpx(FILE_NAME, VAR_NAME, PRECISION, ENDIAN)')
+        print('* Syntax is writecpx(FILE_NAME, VAR_NAME, PRECISION, ENDIAN)')
         os.exit(0)
 
     if len(args) < 3:

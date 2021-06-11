@@ -13,7 +13,7 @@ def uw_3d(*args):
     # params: ph, xy, day, ifgday_ix, bperp, options
 
     if len(args) < 4:
-        print('not enough arguments')
+        print('** Not enough arguments (uw_3d).')
         sys.exit(0)
 
     if len(args) < 5:
@@ -79,7 +79,7 @@ def uw_3d(*args):
         options['temp'] = []
     else:
         if len(options['temp']) != len(ph[0]):
-            print('options["temp"] must be M x 1 vector where M is no. of ifgs')
+            print('** Options["temp"] must be M x 1 vector where M is no. of ifgs')
 
     if 'n_temp_wraps' not in options.keys():
         options['n_temp_wraps'] = 2
@@ -107,20 +107,16 @@ def uw_3d(*args):
         else:
             options['lowfilt_flag'] = 'y'
 
-    uw_grid_wrapped(ph, xy, options['grid_size'], options['prefilt_win'], options['goldfilt_flag'],
-                    options['lowfilt_flag'],
-                    options['gold_alpha'], options['ph_uw_predef'])
+    uw_grid_wrapped(ph, xy, options['grid_size'], options['prefilt_win'], options['goldfilt_flag'], options['lowfilt_flag'], options['gold_alpha'], options['ph_uw_predef'])
 
     ph = []
     uw_interp()
 
     bperp = args[4]
-    uw_sb_unwrap_space_time(day, ifgday_ix, options['unwrap_method'], options['time_win'], options['la_flag'], bperp,
-                           options['n_trial_wraps'], options['prefilt_win'], options['scf_flag'], options['temp'],
-                            options['n_temp_wraps'], options['max_bperp_for_temp_est'])
+    uw_sb_unwrap_space_time(day, ifgday_ix, options['unwrap_method'], options['time_win'], options['la_flag'], bperp, options['n_trial_wraps'], options['prefilt_win'], options['scf_flag'], options['temp'], options['n_temp_wraps'], options['max_bperp_for_temp_est'])
 
     uw_stat_costs(options['unwrap_method'], options['variance'])
 
     ph_uw, msd = uw_unwrap_from_grid(xy, options['grid_size'])
 
-    return ph_uw, msd
+    return(ph_uw, msd)

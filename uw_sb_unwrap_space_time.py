@@ -5,23 +5,26 @@ warnings.filterwarnings("ignore")
 import ggf
 import numpy as np
 
+from scipy.optimize import nnls
+
 from scipy.io import loadmat, savemat
 from scipy.sparse import csr_matrix
 
-from utils import *
+from utils import not_supported_param
 
+from numpy.linalg import lstsq
 
-def uw_sb_unwrap_space_time(day, ifgday_ix, unwrap_method, time_win, la_flag, bperp, n_trial_wraps, prefilt_win,
-                            scf_flag, temp, n_temp_wraps, max_bperp_for_temp_est):
-    print('\nUnwrapping in time-space...')
+def uw_sb_unwrap_space_time(day, ifgday_ix, unwrap_method, time_win, la_flag, bperp, n_trial_wraps, prefilt_win,scf_flag, temp, n_temp_wraps, max_bperp_for_temp_est):
+    
+    print('* Unwrapping in time-space (uw_sb_unwrap_space_time).')
 
-    uw = loadmat('uw_grid.mat');
-    ui = loadmat('uw_interp.mat');
+    uw = loadmat('uw_grid.mat', squeeze_me = True)
+    ui = loadmat('uw_interp.mat', squeeze_me = True)
 
-    n_ifg = uw['n_ifg'][0][0]
-    n_ps = uw['n_ps'][0][0]
-    nzix = uw['nzix']
-    ij = uw['ij']
+    n_ifg = uw['n_ifg']
+    # n_ps = uw['n_ps']
+    # nzix = uw['nzix']
+    # ij = uw['ij']
 
     if 'ph_uw_predef' in uw.keys():
         predef_flag = 'n'
@@ -29,12 +32,12 @@ def uw_sb_unwrap_space_time(day, ifgday_ix, unwrap_method, time_win, la_flag, bp
         predef_flag = 'y'
 
     n_image = len(day)
-    master_ix = np.where(day == 0)[0][0]
+    # master_ix = np.where(day == 0)
     nrow, ncol = np.shape(ui['Z'])
 
     day_pos_ix = np.where(day > 0)
     tempdummy = np.min(day[day_pos_ix])
-    I = np.argmin(day[day_pos_ix])
+    # I = np.argmin(day[day_pos_ix])
     dph_space = np.multiply(uw['ph'][ui['edgs'][:, 2] - 1, :], np.conj(uw['ph'][ui['edgs'][:, 1] - 1, :]))
     if predef_flag == 'y':
         not_supported_param(predef_flag, 'y')
@@ -44,7 +47,6 @@ def uw_sb_unwrap_space_time(day, ifgday_ix, unwrap_method, time_win, la_flag, bp
     else:
         predef_ix = []
 
-    uw.clear()
     tempdummy = -1
 
     dph_space = dph_space / np.abs(dph_space)
@@ -138,42 +140,43 @@ def uw_sb_unwrap_space_time(day, ifgday_ix, unwrap_method, time_win, la_flag, bp
     # end
 
     if la_flag == 'y':
-        print('   Estimating look angle error \n')
+        print('* Estimating look angle error (uw_sb_unwrap_space_time).')
 
-        bperp_range = (max(bperp) - min(bperp))[0]
+        bperp_range = (max(bperp) - min(bperp))
         ix = np.where(np.abs(np.diff(ifgday_ix, 1, 1)) == 1)[0]
 
         if len(ix) >= len(day) - 1:
-            print('   using sequential daisy chain of interferograms\n')
+            print('* Using sequential daisy chain of interferograms (uw_sb_unwrap_space_time).')
             dph_sub = dph_space[:, ix]
             bperp_sub = bperp[ix]
             bperp_range_sub = (max(bperp_sub) - min(bperp_sub))[0]
             n_trial_wraps = n_trial_wraps * (bperp_range_sub / bperp_range)
+            
         else:
             ifgs_per_image = np.sum(np.abs(G), axis=0)
             max_ifgs_per_image = np.amax(ifgs_per_image)
             max_ix = np.argmax(ifgs_per_image)
 
             if max_ifgs_per_image >= len(day) - 2:
-                print('   Using sequential daisy chain of interferograms\n')
+                print('* Using sequential daisy chain of interferograms (uw_sb_unwrap_space_time)')
                 ix = np.array([G[:, max_ix] != 0])[0]
                 gsub = G[ix, max_ix]
                 sign_ix = -np.sign(gsub)
                 dph_sub = dph_space[:, ix]
                 bperp_sub = [bperp[ix]][0]
                 bperp_sub[sign_ix == -1] = -bperp_sub[sign_ix == -1]
-                bperp_sub = np.concatenate((bperp_sub, np.array([[0]])), axis=0)
-                sign_ix = np.tile(sign_ix, (ui['n_edge'][0][0], 1))
+                bperp_sub = np.vstack((np.reshape(bperp_sub, (len(bperp_sub),1)), np.zeros((1, 1))))
+                sign_ix = np.tile(sign_ix, (ui['n_edge'], 1))
                 dph_sub[sign_ix == -1] = np.conj(dph_sub[sign_ix == -1])
-                dph_sub = np.concatenate((dph_sub, np.mean(np.abs(dph_sub), 1).reshape(-1, 1)), axis=1)
+                dph_sub = np.concatenate((dph_sub, np.mean(np.abs(dph_sub), 1).reshape(-1, 1)), axis = 1)
                 slave_ix = np.sum(ifgday_ix[ix, :], axis=1) - max_ix
-                day_sub = day[np.concatenate((slave_ix, np.array([max_ix])), axis=0)]
-                sort_ix = np.argsort(day_sub, axis=None)
-                day_sub = np.sort(day_sub, axis=None).reshape(-1, 1)
+                day_sub = day[np.concatenate((slave_ix, np.array([max_ix])), axis = 0)]
+                sort_ix = np.argsort(day_sub, axis = None)
+                day_sub = np.sort(day_sub, axis = None).reshape(-1, 1)
                 dph_sub = dph_sub[:, sort_ix]
                 bperp_sub = bperp_sub[sort_ix]
-                bperp_sub = np.diff(bperp_sub, 1, axis=0)
-                bperp_range_sub = (max(bperp_sub) - min(bperp_sub))[0]
+                bperp_sub = np.diff(bperp_sub, 1, axis = 0)
+                bperp_range_sub = (max(bperp_sub) - min(bperp_sub))
                 n_trial_wraps = n_trial_wraps * (bperp_range_sub / bperp_range)
                 n_sub = len(day_sub)
                 dph_sub = np.multiply(dph_sub[:, 1:], np.conj(dph_sub[:, 0:len(dph_sub[0]) - 1]))
@@ -184,14 +187,19 @@ def uw_sb_unwrap_space_time(day, ifgday_ix, unwrap_method, time_win, la_flag, bp
                 bperp_sub = bperp
                 bperp_range_sub = bperp_range
 
-        trial_mult = np.array([i for i in range(int(-np.ceil(8 * n_trial_wraps)), int(np.ceil(8 * n_trial_wraps) + 1))])
-        n_trials = len(trial_mult)
-        trial_phase = bperp_sub / bperp_range_sub * np.pi / 4
-        trial_phase_mat = np.exp(complex(0, -1) * trial_phase * trial_mult)
-        K = np.zeros((ui['n_edge'][0][0], 1))
-        coh = np.zeros((ui['n_edge'][0][0], 1))
+        trial_mult1 = np.array([i for i in range(int(-np.ceil(8 * n_trial_wraps)), int(np.ceil(8 * n_trial_wraps) + 1))])
+        trial_mult = np.reshape(trial_mult1, (1, len(trial_mult1)))
+        
+        n_trials = len(trial_mult1)
+        trial_phase1 = bperp_sub / bperp_range_sub * np.pi / 4
+        trial_phase = np.reshape(trial_phase1, (len(trial_phase1), 1))
+        
+        trial_phase_mat = np.exp(np.matmul(complex(0, -1) * trial_phase, trial_mult))
+        
+        K = np.zeros(ui['n_edge'])
+        coh = np.zeros(ui['n_edge'])
 
-        for i in range(0, ui['n_edge'][0][0]):
+        for i in range(ui['n_edge']):
             cpxphase = dph_sub[i, :].reshape(-1, 1)
             cpxphase_mat = np.tile(cpxphase, (1, n_trials))
             phaser = np.multiply(trial_phase_mat, cpxphase_mat)
@@ -209,21 +217,31 @@ def uw_sb_unwrap_space_time(day, ifgday_ix, unwrap_method, time_win, la_flag, bp
                 peak_end_ix = rising_ix[0] + coh_max_ix - 1
             else:
                 peak_end_ix = n_trials
+            
             coh_trial[peak_start_ix:peak_end_ix] = 0
 
             if coh_max - np.max(coh_trial) > 0.1:
-                K0 = np.pi / 4 / bperp_range_sub * trial_mult[coh_max_ix]
-                resphase = np.multiply(cpxphase, np.exp(np.multiply(complex(0, -1), (np.multiply(K0, bperp_sub)))))
+                K0 = np.pi / 4 / bperp_range_sub * trial_mult1[coh_max_ix]
+                
+                resphase = cpxphase.flatten() * np.exp(-1j * (K0 * bperp_sub)).flatten()
+                
                 offset_phase = np.sum(resphase)
-                resphase = np.angle(np.multiply(resphase, np.conj(offset_phase)))
+                
+                resphase = np.angle(resphase * np.conj(offset_phase))
+                
                 weighting = np.abs(cpxphase)
-                A = np.multiply(weighting, bperp_sub)
-                b = np.multiply(weighting, resphase)
-                mopt = np.linalg.lstsq(A, b, rcond=-1)[0]
+                
+                msolve = lstsq(weighting * bperp_sub, weighting.flatten() * resphase.flatten(), rcond = None)
+                mopt = msolve[0][0]
+                # mopt = nnls(weighting * bperp_sub, weighting.flatten() * resphase.flatten())
+                
                 K[i] = K0 + mopt
-                phase_residual = np.multiply(cpxphase, np.exp(complex(0, -1) * (K[i] * bperp_sub)))
+                
+                phase_residual = cpxphase * np.exp(-1j * (K[i] * bperp_sub))
+                
                 mean_phase_residual = np.sum(phase_residual)
-                coh[i] = np.abs(mean_phase_residual) / np.sum(abs(phase_residual))
+                
+                coh[i] = np.abs(mean_phase_residual) / np.sum(np.abs(phase_residual))
 
         cpxphase_mat = []
         trial_phase_mat = []
@@ -236,15 +254,16 @@ def uw_sb_unwrap_space_time(day, ifgday_ix, unwrap_method, time_win, la_flag, bp
             # dph_space(K==0,:)=dph_space(K==0,:).*exp(1i*Kt(K==0)*temp')
             # Kt(K==0)=0;
             # K(Kt==0)=0;
-
-        dph_space = np.multiply(dph_space, np.exp(complex(0, -1) * K * bperp.flatten()))
+        
+        Kbperp = np.matmul(np.reshape(K, (len(K), 1)), np.reshape(bperp, (1, len(bperp))))
+        dph_space = np.multiply(dph_space, np.exp(complex(0, -1) * Kbperp))
         if predef_flag == 'y':
             not_supported_param(predef_flag, 'y')
             # dph_scla=K*bperp';
             # dph_space_uw=dph_space_uw-dph_scla(predef_ix);
             # clear dph_scla
 
-    spread = csr_matrix((ui['n_edge'][0][0], n_ifg), dtype=np.int).toarray()
+    spread = csr_matrix((ui['n_edge'], n_ifg), dtype = np.int).toarray()
 
     if unwrap_method == '2D':
         not_supported_param('unwrap_method', '2D')
@@ -270,7 +289,7 @@ def uw_sb_unwrap_space_time(day, ifgday_ix, unwrap_method, time_win, la_flag, bp
             # end
             # save('uw_space_time','dph_space_uw','dph_noise','spread');
         else:
-            print('   Smoothing in time\n')
+            print('* Smoothing in time.')
 
             if unwrap_method == '3D_FULL':
                 dph_smooth_ifg = np.empty((len(dph_space), len(dph_space[0])))
@@ -280,7 +299,7 @@ def uw_sb_unwrap_space_time(day, ifgday_ix, unwrap_method, time_win, la_flag, bp
                     if sum(ix) >= n_image - 2:
                         gsub = G[ix, i]
                         dph_sub = dph_space[:, ix]
-                        sign_ix = np.tile(-np.sign(np.transpose(gsub)), (ui['n_edge'][0][0], 1))
+                        sign_ix = np.tile(-np.sign(np.transpose(gsub)), (ui['n_edge'], 1))
                         dph_sub[sign_ix == -1] = np.conj(dph_sub[sign_ix == -1])
                         slave_ix = np.sum(ifgday_ix[ix, :], axis=1) - i
                         day_sub = day[slave_ix]
@@ -289,13 +308,13 @@ def uw_sb_unwrap_space_time(day, ifgday_ix, unwrap_method, time_win, la_flag, bp
                         dph_sub = dph_sub[:, sort_ix]
                         dph_sub_angle = np.angle(dph_sub)
                         n_sub = len(day_sub)
-                        dph_smooth = np.zeros((ui['n_edge'][0][0], n_sub))
+                        dph_smooth = np.zeros((ui['n_edge'], n_sub))
                         dph_smooth = dph_smooth.astype(np.complex)
                         for i1 in range(0, n_sub):
                             time_diff = (day_sub[i1] - day_sub).flatten()
                             weight_factor = np.exp(-np.power(time_diff, 2) / 2 / np.power(time_win, 2))
                             weight_factor = weight_factor / sum(weight_factor)
-                            dph_mean = np.sum(np.multiply(dph_sub, np.tile(weight_factor, (ui['n_edge'][0][0], 1))),
+                            dph_mean = np.sum(np.multiply(dph_sub, np.tile(weight_factor, (ui['n_edge'], 1))),
                                               axis=1).reshape(-1, 1)
                             dph_mean_adj = np.mod(dph_sub_angle - np.tile(np.angle(dph_mean), (1, n_sub)) + np.pi,
                                                   2 * np.pi) - np.pi
@@ -304,7 +323,7 @@ def uw_sb_unwrap_space_time(day, ifgday_ix, unwrap_method, time_win, la_flag, bp
                                 m = ggf.matlab_funcs.lscov(GG, np.transpose(dph_mean_adj), w=weight_factor).reshape(
                                     len(GG[0]), len(dph_mean_adj))
                             else:
-                                m = np.zeros((len(GG), ui['n_edge'][0][0]))
+                                m = np.zeros((len(GG), ui['n_edge']))
                             dph_smooth[:, i1] = np.multiply(dph_mean,
                                                             np.exp(complex(0, 1) * (m[0, :].reshape(-1, 1)))).flatten()
 
@@ -318,9 +337,9 @@ def uw_sb_unwrap_space_time(day, ifgday_ix, unwrap_method, time_win, la_flag, bp
                             close_master_ix = close_master_ix[0]
                             if close_master_ix > 1:
                                 close_master_ix = np.concatenate(
-                                    (np.array([close_master_ix - 1]), np.array([close_master_ix])), axis=0)
+                                    (np.array([close_master_ix - 1]), np.array([close_master_ix])), axis = 0)
 
-                        dph_close_master = np.mean(dph_smooth_sub[:, close_master_ix], axis=1).reshape(-1, 1)
+                        dph_close_master = np.mean(dph_smooth_sub[:, close_master_ix], axis = 1).reshape(-1, 1)
                         dph_smooth_sub = dph_smooth_sub - np.tile(
                             dph_close_master - np.angle(np.exp(complex(0, 1) * dph_close_master)), (1, n_sub))
                         dph_smooth_sub = np.multiply(dph_smooth_sub, sign_ix)
@@ -411,7 +430,7 @@ def uw_sb_unwrap_space_time(day, ifgday_ix, unwrap_method, time_win, la_flag, bp
             dph_smooth_ifg = []
 
             if la_flag == 'y':
-                dph_space_uw = dph_space_uw + (K * bperp.flatten())
+                dph_space_uw = dph_space_uw + np.matmul(np.reshape(K, (len(K), 1)), np.reshape(bperp, (1, len(bperp))))
 
             if temp_flag == 'y':
                 not_supported_param('temp_flag', 'y')

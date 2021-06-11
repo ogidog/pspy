@@ -1,10 +1,8 @@
+import os, sys
 import numpy as np
-import os
-
-from scipy.io import loadmat
-from utils import *
+from scipy.io import loadmat, savemat
+# from utils import *
 from writecpx import writecpx
-
 
 def uw_stat_costs(*args):
     # params: unwrap_method,variance,subset_ifg_index
@@ -16,7 +14,7 @@ def uw_stat_costs(*args):
     nshortcycle = 200
     maxshort = 32000
 
-    print('Unwrapping in space...\n')
+    print('* Unwrapping in space (uw_stat_costs).')
 
     uw = loadmat('uw_grid.mat')
     ui = loadmat('uw_interp.mat')
@@ -50,24 +48,8 @@ def uw_stat_costs(*args):
 
     unwrap_method = args[0]
     if unwrap_method == '2D':
-        not_supported_param('unwrap_method', '2D')
-        # edge_length=sqrt(diff(x(ui.edgs(:,2:3)),[],2).^2+diff(y(ui.edgs(:,2:3)),[],2).^2);
-        # %sigsq_noise=ones(ui.n_edge,1);
-        # if uw.pix_size==0
-        #    pix_size=5;  % if we don't know resolution
-        # else
-        #    pix_size=uw.pix_size;
-        # end
-        # if isempty(variance)
-        #    sigsq_noise=zeros(size(edge_length));
-        # else
-        #    sigsq_noise=variance(ui.edgs(:,2))+variance(ui.edgs(:,3));
-        # end
-        # sigsq_aps=(2*pi)^2; % fixed for now as one fringe
-        # aps_range=20000; % fixed for now as 20 km
-        # sigsq_noise=sigsq_noise+sigsq_aps*(1-exp(-edge_length*pix_size*3/aps_range)); % cov of dph=C11+C22-2*C12 (assume APS only contributor)
-        # sigsq_noise=sigsq_noise/10; % scale it to keep in reasonable range
-        # dph_smooth=ut.dph_space_uw;
+        print('* Not supported param [unwrap_method] = ', unwrap_method)
+        sys.exit(0)
     else:
         sigsq_noise = np.power((np.std(ut['dph_noise'], ddof=1, axis=1) / 2 / np.pi), 2).reshape(-1, 1)
         # sigsq_defo = (std(ut.dph_space_uw - ut.dph_noise, 0, 2) / 2 / pi). ^ 2;
@@ -116,15 +98,16 @@ def uw_stat_costs(*args):
     f.close()
 
     for i1 in subset_ifg_index:
-        print('   Processing IFG {} of {}'.format(i1 + 1, len(subset_ifg_index)))
+        # print('*  Processing IFG {} of {}'.format(i1 + 1, len(subset_ifg_index)))
         spread = ut['spread'][:, i1].reshape(-1, 1)
         spread = np.round(np.multiply(np.abs(spread) * np.power(nshortcycle, 2) / 6 / costscale,
                                       np.tile(n_edges, (1, len(spread[0])))))
         sigsqtot = sigsq + spread
 
         if predef_flag == 'y':
-            not_supported_param('predef_flag', 'y')
-            # sigsqtot(ut.predef_ix(:,i1))=1;
+            print('* Not supported_param [predef_flag] = ', predef_flag)
+            sys.exit(0)
+            
         rowstdgrid.T[nzrowix.T] = sigsqtot[np.abs(rowix.T[nzrowix.T]).astype('int') - 1].flatten()
         rowcost[:, 1::4] = rowstdgrid
         colstdgrid.T[nzcolix.T] = sigsqtot[np.abs(colix.T[nzcolix.T]).astype('int') - 1].flatten()
@@ -175,8 +158,4 @@ def uw_stat_costs(*args):
         msd[i1] = (np.sum(np.power(ifg_diff1, 2)) + np.sum(np.power(ifg_diff2, 2))) / (len(ifg_diff1) + len(ifg_diff2))
         ph_uw[:, i1] = ifguw.T[uw['nzix'].astype('bool').T]
 
-    uw_phaseuw = {
-        'ph_uw': ph_uw,
-        'msd': msd
-    }
-    savemat('uw_phaseuw.mat', uw_phaseuw)
+    savemat('uw_phaseuw.mat', {'ph_uw': ph_uw, 'msd': msd})
