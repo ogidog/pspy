@@ -35,6 +35,6 @@ def mat2shp(*args):
 ###############################################################################
 if __name__ == "__main__":
     # For testing
-    args = ['', 'ps_plot_ts_v-d.mat', 'ps_plot_v-d.mat', 'C:\\Users\\Ryzen\\Documents\\PYTHON\\stampsexport_tmp']
-    # args = sys.argv
+    #args = ['', 'ps_plot_ts_v-d.mat', 'ps_plot_v-d.mat', 'C:\\Users\\Ryzen\\Documents\\PYTHON\\stampsexport_tmp']
+    args = sys.argv
     mat2shp(*args)
