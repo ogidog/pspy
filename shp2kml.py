@@ -1,9 +1,9 @@
 import os.path
 import sys
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 from osgeo import ogr, gdal
-
 
 KML_TEMPLATE = '<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:gx="http://www.google.com/kml/ext/2.2">' \
                '<Folder>' \
@@ -39,6 +39,9 @@ KML_TEMPLATE = '<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:atom="http://w
 
 
 def main(input_file, output_file):
+
+    matplotlib.use('Agg')
+
     colors = np.array([[215, 25, 28], [253, 174, 97], [255, 255, 191], [171, 221, 164], [43, 131, 186]])
 
     input_ds = gdal.Open(input_file)
