@@ -88,7 +88,7 @@ def main(input_file, output_file):
     # Convert tiff to png
     rgba_png_file = os.path.dirname(rgba_tiff_file) + os.path.sep + "img.png"
     options_list = [
-        '-ot Byte',
+        '-ot UInt16',
         '-of PNG'
     ]
     options_string = " ".join(options_list)
