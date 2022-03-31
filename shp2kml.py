@@ -105,7 +105,7 @@ def main(input_file, output_file):
 
     f = lambda m, c: plt.plot([], [], marker=m, color=c, ls="none")[0]
     handles = [f("s", marker_color[i]) for i in range(len(marker_color))]
-    legend = plt.legend(handles, labels, title="Velocity (mm/year)", title_fontsize="large", loc=3, framealpha=1,
+    legend = plt.legend(handles, labels, title="Velocity (mm/year)", loc=3, framealpha=1,
                         frameon=True)
     legend_png_file = os.path.dirname(rgba_png_file) + os.path.sep + "legend.png"
     fig = legend.figure
