@@ -3,7 +3,7 @@ import sys
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-from osgeo import ogr, gdal
+from osgeo import gdal
 
 KML_TEMPLATE = '<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:gx="http://www.google.com/kml/ext/2.2">' \
                '<Folder>' \
