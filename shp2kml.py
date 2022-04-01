@@ -86,9 +86,9 @@ def main(input_file, output_file):
     rgba_tiff_ds.FlushCache()
 
     # Convert tiff to png
+    """
     rgba_png_file = os.path.dirname(rgba_tiff_file) + os.path.sep + "img.png"
     options_list = [
-        '-ot Byte',
         '-of PNG'
     ]
     options_string = " ".join(options_list)
@@ -97,6 +97,7 @@ def main(input_file, output_file):
         rgba_tiff_file,
         options=options_string
     )
+    """
 
     # Create legend
     labels = ["{} - {}".format(np.round(intervals[i], 2), np.round(intervals[i + 1], 2)) for i in
@@ -107,7 +108,7 @@ def main(input_file, output_file):
     handles = [f("s", marker_color[i]) for i in range(len(marker_color))]
     legend = plt.legend(handles, labels, title="Velocity (mm/year)", loc=3, framealpha=1,
                         frameon=True)
-    legend_png_file = os.path.dirname(rgba_png_file) + os.path.sep + "legend.png"
+    legend_png_file = os.path.dirname(rgba_tiff_file) + os.path.sep + "legend.png"
     fig = legend.figure
     fig.canvas.draw()
     bbox = legend.get_window_extent()
@@ -116,7 +117,7 @@ def main(input_file, output_file):
     fig.savefig(legend_png_file, dpi="figure", bbox_inches=bbox)
 
     # Create kml file
-    template = KML_TEMPLATE.replace("%IMG%", os.path.basename(rgba_png_file))\
+    template = KML_TEMPLATE.replace("%IMG%", os.path.basename(rgba_tiff_file))\
         .replace("%LEGEND%", os.path.basename(legend_png_file))\
         .replace("%NORTH%", str(north)) \
         .replace("%SOUTH%", str(south)) \
