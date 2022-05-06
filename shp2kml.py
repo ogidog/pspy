@@ -85,19 +85,8 @@ def main(input_file, output_file):
     rgba_tiff_ds.GetRasterBand(4).WriteArray(alphaband_data)
     rgba_tiff_ds.FlushCache()
 
-    # Convert tiff to png
-    """
     rgba_png_file = os.path.dirname(rgba_tiff_file) + os.path.sep + "img.png"
-    options_list = [
-        '-of PNG'
-    ]
-    options_string = " ".join(options_list)
-    gdal.Translate(
-        rgba_png_file,
-        rgba_tiff_file,
-        options=options_string
-    )
-    """
+
 
     # Create legend
     labels = ["{} - {}".format(np.round(intervals[i], 2), np.round(intervals[i + 1], 2)) for i in
@@ -117,7 +106,7 @@ def main(input_file, output_file):
     fig.savefig(legend_png_file, dpi="figure", bbox_inches=bbox)
 
     # Create kml file
-    template = KML_TEMPLATE.replace("%IMG%", os.path.basename(rgba_tiff_file))\
+    template = KML_TEMPLATE.replace("%IMG%", os.path.basename(rgba_png_file))\
         .replace("%LEGEND%", os.path.basename(legend_png_file))\
         .replace("%NORTH%", str(north)) \
         .replace("%SOUTH%", str(south)) \
